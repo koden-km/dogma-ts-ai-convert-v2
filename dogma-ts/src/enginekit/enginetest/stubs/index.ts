@@ -199,26 +199,13 @@ export function createApplicationStub(
 
 export type AggregateRootStub = AggregateRoot & {
   appliedEvents: Event[];
-  applyEventFunc?: (e: Event) => void;
-  aggregateInstanceDescriptionFunc?: () => string;
-  applyEvent(e: Event): void;
-  aggregateInstanceDescription(): string;
 };
 
 export function createAggregateRootStub(
   init?: Partial<AggregateRootStub>,
 ): AggregateRootStub {
   return {
-    appliedEvents: [],
-    applyEventFunc: init?.applyEventFunc,
-    aggregateInstanceDescriptionFunc: init?.aggregateInstanceDescriptionFunc,
-    applyEvent(e: Event) {
-      this.appliedEvents.push(e);
-      this.applyEventFunc?.(e);
-    },
-    aggregateInstanceDescription() {
-      return this.aggregateInstanceDescriptionFunc?.() ?? "";
-    },
+    appliedEvents: init?.appliedEvents ?? [],
   };
 }
 
@@ -229,6 +216,8 @@ export type AggregateMessageHandlerStub<
   configureFunc?: (c: AggregateConfigurer) => void;
   routeCommandToInstanceFunc?: (c: Command) => string;
   handleCommandFunc?: (r: R, s: AggregateCommandScope<R>, c: Command) => void;
+  applyEventFunc?: (r: R, e: Event) => void;
+  describeInstanceFunc?: (r: R) => string;
 };
 
 export function createAggregateMessageHandlerStub<
@@ -241,6 +230,8 @@ export function createAggregateMessageHandlerStub<
     configureFunc: init?.configureFunc,
     routeCommandToInstanceFunc: init?.routeCommandToInstanceFunc,
     handleCommandFunc: init?.handleCommandFunc,
+    applyEventFunc: init?.applyEventFunc,
+    describeInstanceFunc: init?.describeInstanceFunc,
     configure(c: AggregateConfigurer) {
       this.configureFunc?.(c);
     },
@@ -257,14 +248,20 @@ export function createAggregateMessageHandlerStub<
     handleCommand(r: R, s: AggregateCommandScope<R>, c: Command) {
       this.handleCommandFunc?.(r, s, c);
     },
-    applyEvent: init?.applyEvent,
-    describeInstance: init?.describeInstance,
+    applyEvent(r: R, e: Event) {
+      if (Array.isArray((r as any).appliedEvents)) {
+        (r as any).appliedEvents.push(e);
+      }
+      this.applyEventFunc?.(r, e);
+    },
+    describeInstance(r: R): string {
+      return this.describeInstanceFunc?.(r) ?? "";
+    },
   };
 }
 
 export type ProcessRootStub = ProcessRoot & {
   value?: any;
-  processInstanceDescriptionFunc?: (ended: boolean) => string;
 };
 
 export function createProcessRootStub(
@@ -272,10 +269,6 @@ export function createProcessRootStub(
 ): ProcessRootStub {
   return {
     value: init?.value,
-    processInstanceDescriptionFunc: init?.processInstanceDescriptionFunc,
-    processInstanceDescription(ended: boolean) {
-      return this.processInstanceDescriptionFunc?.(ended) ?? "";
-    },
   };
 }
 
@@ -299,6 +292,7 @@ export type ProcessMessageHandlerStub<R extends ProcessRoot = ProcessRootStub> =
       s: ProcessDeadlineScope<R>,
       d: Deadline,
     ) => Promise<void> | void;
+    describeInstanceFunc?: (r: R, ended: boolean) => string;
   };
 
 export function createProcessMessageHandlerStub<
@@ -310,6 +304,7 @@ export function createProcessMessageHandlerStub<
     routeEventToInstanceFunc: init?.routeEventToInstanceFunc,
     handleEventFunc: init?.handleEventFunc,
     handleDeadlineFunc: init?.handleDeadlineFunc,
+    describeInstanceFunc: init?.describeInstanceFunc,
     configure(c: ProcessConfigurer) {
       this.configureFunc?.(c);
     },
@@ -329,7 +324,9 @@ export function createProcessMessageHandlerStub<
     handleDeadline(ctx: Context, r: R, s: ProcessDeadlineScope<R>, d: Deadline) {
       return this.handleDeadlineFunc?.(ctx, r, s, d);
     },
-    describeInstance: init?.describeInstance,
+    describeInstance(r: R, ended: boolean): string {
+      return this.describeInstanceFunc?.(r, ended) ?? "";
+    },
   };
 }
 

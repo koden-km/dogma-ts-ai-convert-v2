@@ -33,15 +33,7 @@ export type HandlerConfigurer = {
   //
   // Prefer conditionally disabling a handler over conditionally adding it to
   // the application.
-  disable(...options: DisableOption[]): void;
-};
-
-// DisableOption is an option that modifies the behavior of the
-// [HandlerConfigurer].disable method.
-//
-// This type exists for forward-compatibility.
-export type DisableOption = {
-  readonly _futureDisableOption?: "DisableOption";
+  disable(): void;
 };
 
 // HandlerScope represents the context within which the engine invokes a message

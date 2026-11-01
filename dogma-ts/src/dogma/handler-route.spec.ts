@@ -18,6 +18,7 @@ describe("handler-route", () => {
         newRoot: () => ({}),
         routeCommandToInstance: () => "id",
         handleCommand() {},
+        applyEvent() {},
       };
       const r = viaAggregate(h);
       expect(r.kind).toBe("Aggregate");

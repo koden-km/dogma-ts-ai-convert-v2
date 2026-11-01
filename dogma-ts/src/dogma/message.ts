@@ -31,8 +31,6 @@ export class UnexpectedMessageError extends Error {
   }
 }
 
-export const UnexpectedMessage = new UnexpectedMessageError();
-
 // InvalidMessageError is an error used by a message validation when a message
 // has invalid data.
 export class InvalidMessageError extends Error {

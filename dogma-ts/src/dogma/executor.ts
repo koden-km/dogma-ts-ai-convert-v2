@@ -24,7 +24,6 @@ export type CommandExecutor = {
 export type IdempotencyKeyOption = {
   readonly kind: "IdempotencyKey";
   readonly key: string;
-  keyValue(): string;
 };
 
 // EventObserver is a callback invoked by the engine for each event of type T
@@ -41,8 +40,6 @@ export type EventObserverOption = {
   readonly kind: "EventObserver";
   readonly eventType: RegisteredMessageType;
   readonly observer: (ctx: Context, e: Event) => Promise<boolean> | boolean;
-  eventTypeValue(): RegisteredMessageType;
-  observerValue(): (ctx: Context, e: Event) => Promise<boolean> | boolean;
 };
 
 // ExecuteCommandOption is an option that modifies the behavior of
@@ -58,9 +55,6 @@ export function withIdempotencyKey(key: string): IdempotencyKeyOption {
   return {
     kind: "IdempotencyKey",
     key,
-    keyValue() {
-      return key;
-    },
   };
 }
 
@@ -84,11 +78,5 @@ export function withEventObserver<T extends Event = Event>(
     kind: "EventObserver",
     eventType: typ,
     observer,
-    eventTypeValue() {
-      return typ;
-    },
-    observerValue() {
-      return observer;
-    },
   };
 }

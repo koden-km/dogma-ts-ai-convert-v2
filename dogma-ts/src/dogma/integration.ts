@@ -1,6 +1,9 @@
 import type { ConcurrencyPreference } from "./concurrency.ts";
 import type { HandlerConfigurer, HandlerScope } from "./handler.ts";
-import type { MessageRoute } from "./message-route.ts";
+import type {
+  HandlesCommandRoute,
+  RecordsEventRoute,
+} from "./message-route.ts";
 import type { Command, Event } from "./message.ts";
 import type { Context } from "./util.ts";
 
@@ -44,8 +47,6 @@ export type IntegrationCommandScope = HandlerScope & {
   recordEvent(e: Event): void;
 };
 
-// IntegrationRoute is an interface for types that represent a relationship
-// between an [IntegrationMessageHandler] and a message type.
-export type IntegrationRoute = MessageRoute & {
-  isIntegrationRoute(): boolean;
-};
+// IntegrationRoute represents a relationship between an
+// [IntegrationMessageHandler] and a message type.
+export type IntegrationRoute = HandlesCommandRoute | RecordsEventRoute;

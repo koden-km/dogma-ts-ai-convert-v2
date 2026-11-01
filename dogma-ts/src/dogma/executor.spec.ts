@@ -16,7 +16,6 @@ describe("executor", () => {
     it("returns an option with the specified idempotency key", () => {
       const o = withIdempotencyKey("<key>");
       expect(o.key).toBe("<key>");
-      expect(o.keyValue()).toBe("<key>");
     });
 
     it("throws if the key is empty", () => {

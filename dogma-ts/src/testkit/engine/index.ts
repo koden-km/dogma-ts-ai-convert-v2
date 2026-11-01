@@ -182,7 +182,7 @@ function createAggregateController(
   messageIDs: MessageIDGenerator,
 ): Controller {
   let instances = new Map<string, AggregateInstance>();
-  const handler = config.source.get()!;
+  const handler = config.handler!;
 
   function marshalAggregate(root: AggregateRoot): {
     supported: boolean;
@@ -191,9 +191,6 @@ function createAggregateController(
     try {
       if (typeof handler.marshal === "function") {
         return { supported: true, data: handler.marshal(root) };
-      }
-      if (typeof root.marshal === "function") {
-        return { supported: true, data: root.marshal() };
       }
       return { supported: false };
     } catch (err) {
@@ -208,14 +205,7 @@ function createAggregateController(
     root: AggregateRoot,
     data: string | Uint8Array,
   ): void {
-    if (typeof handler.unmarshal === "function") {
-      handler.unmarshal(root, data);
-      return;
-    }
-    if (typeof root.unmarshal === "function") {
-      root.unmarshal(data);
-      return;
-    }
+    handler.unmarshal?.(root, data);
   }
 
   return {
@@ -470,7 +460,7 @@ function createProcessController(
 ): Controller {
   let instances = new Map<string, ProcessInstance>();
   let deadlines: Envelope[] = [];
-  const handler = config.source.get()!;
+  const handler = config.handler!;
 
   function saveProcessState(
     root: ProcessRoot,
@@ -478,11 +468,6 @@ function createProcessController(
   ): void {
     if (typeof handler.marshal === "function") {
       inst.serialized = handler.marshal(root);
-      inst.mutated = true;
-      return;
-    }
-    if (typeof root.marshal === "function") {
-      inst.serialized = root.marshal();
       inst.mutated = true;
       return;
     }
@@ -498,14 +483,8 @@ function createProcessController(
   ): void {
     if (!inst.mutated) return;
     if (inst.serialized !== undefined) {
-      if (typeof handler.unmarshal === "function") {
-        handler.unmarshal(root, inst.serialized);
-        return;
-      }
-      if (typeof root.unmarshal === "function") {
-        root.unmarshal(inst.serialized);
-        return;
-      }
+      handler.unmarshal?.(root, inst.serialized);
+      return;
     }
     if (inst.clonedData !== undefined) {
       cloneDataInto(root, inst.clonedData);
@@ -915,7 +894,7 @@ function createIntegrationController(
   messageIDs: MessageIDGenerator,
 ): Controller {
   let offset = 0n;
-  const handler = config.source.get()!;
+  const handler = config.handler!;
 
   return {
     handlerConfig(): Handler {
@@ -1041,7 +1020,7 @@ function createProjectionController(
   compactDuringHandling: boolean,
 ): Controller {
   let lastCompact = new Date(0);
-  const handler = config.source.get()!;
+  const handler = config.handler!;
 
   return {
     handlerConfig(): Handler {

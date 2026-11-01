@@ -12,30 +12,6 @@ import { normalizeUUID } from "./uuid.ts";
 
 export type MessageKind = "command" | "event" | "deadline";
 
-// RegisterCommandOption is an option that modifies the behavior of
-// [registerCommand].
-//
-// This type exists for forward-compatibility.
-export type RegisterCommandOption = {
-  readonly _futureRegisterCommandOption?: "RegisterCommandOption";
-};
-
-// RegisterEventOption is an option that modifies the behavior of
-// [registerEvent].
-//
-// This type exists for forward-compatibility.
-export type RegisterEventOption = {
-  readonly _futureRegisterEventOption?: "RegisterEventOption";
-};
-
-// RegisterDeadlineOption is an option that modifies the behavior of
-// [registerDeadline].
-//
-// This type exists for forward-compatibility.
-export type RegisterDeadlineOption = {
-  readonly _futureRegisterDeadlineOption?: "RegisterDeadlineOption";
-};
-
 // RegisteredMessageType contains information about an implementation of [Command],
 // [Event], or [Deadline] that's in Dogma's message registry.
 export type RegisteredMessageType = {
@@ -44,7 +20,6 @@ export type RegisteredMessageType = {
   readonly kind: MessageKind;
   readonly validate?: (msg: any, scope?: any) => void;
   readonly describe?: (msg: any) => string;
-  idValue(): string;
   create(): Message;
 };
 
@@ -114,9 +89,6 @@ function registerMessageType(
     kind,
     validate: options?.validate,
     describe: options?.describe,
-    idValue() {
-      return normalizedID;
-    },
     create() {
       return {
         type: kind,

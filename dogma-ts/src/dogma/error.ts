@@ -2,8 +2,8 @@
 // particular implementation.
 //
 // It may be thrown by:
-//  - [AggregateMessageHandler].marshal() / [AggregateRoot].marshal()
-//  - [AggregateMessageHandler].unmarshal() / [AggregateRoot].unmarshal()
+//  - [AggregateMessageHandler].marshal()
+//  - [AggregateMessageHandler].unmarshal()
 //  - [ProjectionMessageHandler].reset()
 export class NotSupportedError extends Error {
   constructor(message: string = "not supported") {
@@ -24,7 +24,3 @@ export class EventObserverNotSatisfiedError extends Error {
     this.name = "EventObserverNotSatisfiedError";
   }
 }
-
-export const ErrNotSupported = new NotSupportedError();
-export const ErrEventObserverNotSatisfied =
-  new EventObserverNotSatisfiedError();

@@ -12,25 +12,21 @@ export type HandlerRouteKind =
 export type AggregateHandlerRoute = {
   readonly kind: "Aggregate";
   readonly handler: AggregateMessageHandler<any>;
-  handlerValue(): AggregateMessageHandler<any>;
 };
 
 export type ProcessHandlerRoute = {
   readonly kind: "Process";
   readonly handler: ProcessMessageHandler<any>;
-  handlerValue(): ProcessMessageHandler<any>;
 };
 
 export type IntegrationHandlerRoute = {
   readonly kind: "Integration";
   readonly handler: IntegrationMessageHandler;
-  handlerValue(): IntegrationMessageHandler;
 };
 
 export type ProjectionHandlerRoute = {
   readonly kind: "Projection";
   readonly handler: ProjectionMessageHandler;
-  handlerValue(): ProjectionMessageHandler;
 };
 
 // HandlerRoute represents a relationship between the [Application] and a
@@ -41,27 +37,10 @@ export type HandlerRoute =
   | IntegrationHandlerRoute
   | ProjectionHandlerRoute;
 
-export type ViaAggregateOption = {
-  readonly _futureViaAggregateOption?: "ViaAggregateOption";
-};
-
-export type ViaProcessOption = {
-  readonly _futureViaProcessOption?: "ViaProcessOption";
-};
-
-export type ViaIntegrationOption = {
-  readonly _futureViaIntegrationOption?: "ViaIntegrationOption";
-};
-
-export type ViaProjectionOption = {
-  readonly _futureViaProjectionOption?: "ViaProjectionOption";
-};
-
 // viaAggregate configures the [Application] to route messages to and from an
 // [AggregateMessageHandler].
 export function viaAggregate<RootT extends AggregateRoot>(
   handler: AggregateMessageHandler<RootT>,
-  ..._options: ViaAggregateOption[]
 ): AggregateHandlerRoute {
   if (!handler) {
     throw new Error("handler cannot be null or undefined");
@@ -69,9 +48,6 @@ export function viaAggregate<RootT extends AggregateRoot>(
   return {
     kind: "Aggregate",
     handler,
-    handlerValue() {
-      return handler;
-    },
   };
 }
 
@@ -79,7 +55,6 @@ export function viaAggregate<RootT extends AggregateRoot>(
 // [ProcessMessageHandler].
 export function viaProcess<RootT extends ProcessRoot>(
   handler: ProcessMessageHandler<RootT>,
-  ..._options: ViaProcessOption[]
 ): ProcessHandlerRoute {
   if (!handler) {
     throw new Error("handler cannot be null or undefined");
@@ -87,9 +62,6 @@ export function viaProcess<RootT extends ProcessRoot>(
   return {
     kind: "Process",
     handler,
-    handlerValue() {
-      return handler;
-    },
   };
 }
 
@@ -97,7 +69,6 @@ export function viaProcess<RootT extends ProcessRoot>(
 // [IntegrationMessageHandler].
 export function viaIntegration(
   handler: IntegrationMessageHandler,
-  ..._options: ViaIntegrationOption[]
 ): IntegrationHandlerRoute {
   if (!handler) {
     throw new Error("handler cannot be null or undefined");
@@ -105,9 +76,6 @@ export function viaIntegration(
   return {
     kind: "Integration",
     handler,
-    handlerValue() {
-      return handler;
-    },
   };
 }
 
@@ -115,7 +83,6 @@ export function viaIntegration(
 // [ProjectionMessageHandler].
 export function viaProjection(
   handler: ProjectionMessageHandler,
-  ..._options: ViaProjectionOption[]
 ): ProjectionHandlerRoute {
   if (!handler) {
     throw new Error("handler cannot be null or undefined");
@@ -123,8 +90,5 @@ export function viaProjection(
   return {
     kind: "Projection",
     handler,
-    handlerValue() {
-      return handler;
-    },
   };
 }

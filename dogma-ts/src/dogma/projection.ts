@@ -1,7 +1,7 @@
 import type { ConcurrencyPreference } from "./concurrency.ts";
 import { NotSupportedError } from "./error.ts";
 import type { HandlerConfigurer, HandlerScope } from "./handler.ts";
-import type { MessageRoute } from "./message-route.ts";
+import type { HandlesEventRoute } from "./message-route.ts";
 import type { Event } from "./message.ts";
 import type { Context } from "./util.ts";
 
@@ -79,9 +79,7 @@ export type ProjectionResetScope = HandlerScope;
 
 // ProjectionRoute describes a message type that's routed to a
 // [ProjectionMessageHandler].
-export type ProjectionRoute = MessageRoute & {
-  isProjectionRoute(): boolean;
-};
+export type ProjectionRoute = HandlesEventRoute;
 
 // NoCompactBehavior is an embeddable object for [ProjectionMessageHandler]
 // implementations that don't require compaction.

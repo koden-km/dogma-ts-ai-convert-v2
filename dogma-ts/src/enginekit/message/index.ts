@@ -95,8 +95,6 @@ export type Type = {
   readonly name: Name;
   readonly kind: Kind;
   readonly id?: string;
-  nameValue(): Name;
-  kindValue(): Kind;
   toString(): string;
 };
 
@@ -112,12 +110,6 @@ function getOrCreateType(name: string, kind: Kind, id?: string): Type {
     name,
     kind,
     id,
-    nameValue() {
-      return name;
-    },
-    kindValue() {
-      return kind;
-    },
     toString() {
       return name;
     },
@@ -134,7 +126,7 @@ export function typeFor(
   nameOrType: string | RegisteredMessageType | Type,
   fallbackKind?: Kind,
 ): Type {
-  if (typeof nameOrType === "object" && "kindValue" in nameOrType) {
+  if (typeof nameOrType === "object" && !("create" in nameOrType)) {
     return nameOrType;
   }
   if (typeof nameOrType === "object") {

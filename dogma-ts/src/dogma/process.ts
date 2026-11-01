@@ -1,5 +1,9 @@
 import type { HandlerConfigurer, HandlerScope } from "./handler.ts";
-import type { MessageRoute } from "./message-route.ts";
+import type {
+  ExecutesCommandRoute,
+  HandlesEventRoute,
+  SchedulesDeadlineRoute,
+} from "./message-route.ts";
 import {
   type Command,
   type Deadline,
@@ -11,38 +15,16 @@ import type { Context } from "./util.ts";
 // A ProcessRoot is an application's representation of a process instance used
 // within [ProcessMessageHandler] implementations.
 //
-// In idiomatic TypeScript, ProcessRoot can be a pure data object, with
-// optional `describeInstance` / `marshal` / `unmarshal` defined on the
-// [ProcessMessageHandler] (or on the root itself).
+// In idiomatic TypeScript, ProcessRoot is a pure data object, with optional
+// `describeInstance` / `marshal` / `unmarshal` defined on the
+// [ProcessMessageHandler].
 export type ProcessRoot = Record<string, any>;
 
 // StatelessProcessRoot is an empty [ProcessRoot] for processes that don't
 // maintain any state.
-export type StatelessProcessRoot = {
-  readonly __stateless?: true;
-};
+export type StatelessProcessRoot = Record<string, never>;
 
-export const statelessProcessRoot: StatelessProcessRoot = Object.freeze({
-  __stateless: true as const,
-  processInstanceDescription(_ended: boolean): string {
-    return "";
-  },
-  marshalBinary(): Uint8Array {
-    return new Uint8Array(0);
-  },
-  unmarshalBinary(data?: Uint8Array | null): void {
-    if (data && data.length > 0) {
-      throw new Error("cannot unmarshal non-empty data into stateless process");
-    }
-  },
-});
-
-export function isStatelessProcessRoot(r: unknown): r is StatelessProcessRoot {
-  return (
-    r === statelessProcessRoot ||
-    Boolean(r && typeof r === "object" && (r as any).__stateless === true)
-  );
-}
+export const statelessProcessRoot: StatelessProcessRoot = Object.freeze({});
 
 export type ProcessEventRouteResult =
   | { id: string; ok: boolean }
@@ -147,9 +129,10 @@ export type ProcessDeadlineScope<RootT extends ProcessRoot = ProcessRoot> =
 
 // ProcessRoute describes a message type that's routed to or from a
 // [ProcessMessageHandler].
-export type ProcessRoute = MessageRoute & {
-  isProcessRoute(): boolean;
-};
+export type ProcessRoute =
+  | HandlesEventRoute
+  | ExecutesCommandRoute
+  | SchedulesDeadlineRoute;
 
 // NoDeadlineMessagesBehavior is an embeddable object for [ProcessMessageHandler]
 // implementations that don't use [Deadline] messages.
@@ -177,11 +160,5 @@ export function describeProcessInstance<RootT extends ProcessRoot>(
   root: RootT,
   ended: boolean,
 ): string {
-  if (typeof handler.describeInstance === "function") {
-    return handler.describeInstance(root, ended);
-  }
-  if (typeof (root as any).processInstanceDescription === "function") {
-    return (root as any).processInstanceDescription(ended);
-  }
-  return "";
+  return handler.describeInstance?.(root, ended) ?? "";
 }

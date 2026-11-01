@@ -1,14 +1,17 @@
 import { NotSupportedError } from "./error.ts";
 import type { HandlerConfigurer, HandlerScope } from "./handler.ts";
-import type { MessageRoute } from "./message-route.ts";
+import type {
+  HandlesCommandRoute,
+  RecordsEventRoute,
+} from "./message-route.ts";
 import type { Command, Event } from "./message.ts";
 
 // An AggregateRoot is an application's working representation of an aggregate
 // instance used within [AggregateMessageHandler] implementations.
 //
-// In idiomatic TypeScript, AggregateRoot can be a pure data object, with
+// In idiomatic TypeScript, AggregateRoot is a pure data object, with
 // `applyEvent` and optional `describeInstance` / `marshal` / `unmarshal`
-// defined on the [AggregateMessageHandler] (or on the root itself).
+// defined on the [AggregateMessageHandler].
 export type AggregateRoot = Record<string, any>;
 
 // An AggregateMessageHandler encapsulates an application's "invariant" logic -
@@ -36,10 +39,7 @@ export type AggregateMessageHandler<
 
   // applyEvent() updates the aggregate instance to reflect the occurrence of an
   // event.
-  //
-  // Can be implemented on the handler (preferred for pure data roots) or on
-  // the root object itself.
-  applyEvent?(r: RootT, e: Event): void;
+  applyEvent(r: RootT, e: Event): void;
 
   // describeInstance() returns a human-readable description of the aggregate
   // instance's current state, for use in logging and telemetry.
@@ -80,12 +80,10 @@ export type AggregateCommandScope<RootT extends AggregateRoot = AggregateRoot> =
 
 // AggregateRoute describes a message type that's routed to or from a
 // [AggregateMessageHandler].
-export type AggregateRoute = MessageRoute & {
-  isAggregateRoute(): void;
-};
+export type AggregateRoute = HandlesCommandRoute | RecordsEventRoute;
 
-// NoSnapshotBehavior contains helpers for [AggregateMessageHandler] or
-// [AggregateRoot] implementations that don't support snapshots.
+// NoSnapshotBehavior contains helpers for [AggregateMessageHandler]
+// implementations that don't support snapshots.
 export const NoSnapshotBehavior = {
   marshal(): never {
     throw new NotSupportedError();
@@ -95,18 +93,14 @@ export const NoSnapshotBehavior = {
   },
 };
 
-// applyAggregateEvent applies an event to an aggregate root using either the
-// handler's `applyEvent` function or the root's `applyEvent` method.
+// applyAggregateEvent applies an event to an aggregate root using the
+// handler's `applyEvent` function.
 export function applyAggregateEvent<RootT extends AggregateRoot>(
   handler: AggregateMessageHandler<RootT>,
   root: RootT,
   event: Event,
 ): void {
-  if (typeof handler.applyEvent === "function") {
-    handler.applyEvent(root, event);
-  } else if (typeof (root as any).applyEvent === "function") {
-    (root as any).applyEvent(event);
-  }
+  handler.applyEvent(root, event);
 }
 
 // describeAggregateInstance returns a human-readable description of an
@@ -115,11 +109,5 @@ export function describeAggregateInstance<RootT extends AggregateRoot>(
   handler: AggregateMessageHandler<RootT>,
   root: RootT,
 ): string {
-  if (typeof handler.describeInstance === "function") {
-    return handler.describeInstance(root);
-  }
-  if (typeof (root as any).aggregateInstanceDescription === "function") {
-    return (root as any).aggregateInstanceDescription();
-  }
-  return "";
+  return handler.describeInstance?.(root) ?? "";
 }

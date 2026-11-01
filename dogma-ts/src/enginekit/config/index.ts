@@ -6,7 +6,6 @@ import {
   type Application as DogmaApplication,
   type ApplicationConfigurer,
   type ConcurrencyPreference,
-  type DisableOption,
   type HandlerRoute,
   type IntegrationConfigurer,
   type IntegrationMessageHandler,
@@ -22,7 +21,6 @@ import {
   type ProjectionConfigurer,
   type ProjectionMessageHandler,
   type ProjectionRoute,
-  unwrapHandler,
 } from "@/dogma/index.ts";
 import {
   CommandKind,
@@ -32,14 +30,11 @@ import {
   type Type as MessageType,
   typeFromRegistered,
 } from "../message/index.ts";
-import { none, type Optional, some } from "../optional/index.ts";
 
 // IdentityValue represents a resolved entity identity (name and UUID key).
 export type IdentityValue = {
   readonly name: string;
   readonly key: string;
-  getName(): string;
-  getKey(): string;
   toString(): string;
 };
 
@@ -47,12 +42,6 @@ export function createIdentityValue(name: string, key: string): IdentityValue {
   return {
     name,
     key,
-    getName() {
-      return name;
-    },
-    getKey() {
-      return key;
-    },
     toString() {
       return `${name}/${key}`;
     },
@@ -184,27 +173,30 @@ export function routeCapabilities(
 }
 
 export type IdentityComponent = {
-  readonly name: Optional<string>;
-  readonly key: Optional<string>;
+  readonly name?: string;
+  readonly key?: string;
 };
 
 export type Route = {
-  readonly routeType: Optional<RouteType>;
-  readonly messageTypeID: Optional<string>;
-  readonly messageTypeName: Optional<string>;
-  readonly messageType: Optional<MessageType>;
+  readonly routeType?: RouteType;
+  readonly messageTypeID?: string;
+  readonly messageTypeName?: string;
+  readonly messageType?: MessageType;
   toString(): string;
 };
 
 export type RouteSetFilter = {
   testRoute?: (r: Route) => boolean;
-  testMessage?: (mt: MessageType, routes: Map<RouteType, Map<Handler, Route>>) => boolean;
+  testMessage?: (
+    mt: MessageType,
+    routes: Map<RouteType, Map<Handler, Route>>,
+  ) => boolean;
 };
 
 export function filterByRouteType(...types: RouteType[]): RouteSetFilter {
   return {
     testRoute(r: Route) {
-      return r.routeType.isPresent() && types.includes(r.routeType.get());
+      return r.routeType !== undefined && types.includes(r.routeType);
     },
   };
 }
@@ -214,8 +206,8 @@ export function filterByRouteDirection(
 ): RouteSetFilter {
   return {
     testRoute(r: Route) {
-      if (!r.routeType.isPresent()) return false;
-      const dir = routeDirection(r.routeType.get());
+      if (r.routeType === undefined) return false;
+      const dir = routeDirection(r.routeType);
       return directions.some((d) => hasDirection(d, dir));
     },
   };
@@ -225,8 +217,7 @@ export function filterByMessageKind(...kinds: MessageKind[]): RouteSetFilter {
   return {
     testRoute(r: Route) {
       return (
-        r.messageType.isPresent() &&
-        kinds.includes(r.messageType.get().kind)
+        r.messageType !== undefined && kinds.includes(r.messageType.kind)
       );
     },
   };
@@ -336,38 +327,30 @@ export type HandlerCommon = {
 
 export type Aggregate = HandlerCommon & {
   readonly kind: "aggregate";
-  readonly source: Optional<AggregateMessageHandler<AggregateRoot>>;
+  readonly handler?: AggregateMessageHandler<AggregateRoot>;
   handlerType(): typeof AggregateHandlerType;
-  interface(): AggregateMessageHandler<AggregateRoot>;
-  implementation(): AggregateMessageHandler<any>;
 };
 
 export type Process = HandlerCommon & {
   readonly kind: "process";
-  readonly source: Optional<ProcessMessageHandler<ProcessRoot>>;
+  readonly handler?: ProcessMessageHandler<ProcessRoot>;
   handlerType(): typeof ProcessHandlerType;
-  interface(): ProcessMessageHandler<ProcessRoot>;
-  implementation(): ProcessMessageHandler<any>;
 };
 
 export type Integration = HandlerCommon & {
   readonly kind: "integration";
-  readonly source: Optional<IntegrationMessageHandler>;
+  readonly handler?: IntegrationMessageHandler;
   readonly concurrencyPreferences: ConcurrencyPreference[];
   handlerType(): typeof IntegrationHandlerType;
   concurrencyPreference(): ConcurrencyPreference;
-  interface(): IntegrationMessageHandler;
-  implementation(): IntegrationMessageHandler;
 };
 
 export type Projection = HandlerCommon & {
   readonly kind: "projection";
-  readonly source: Optional<ProjectionMessageHandler>;
+  readonly handler?: ProjectionMessageHandler;
   readonly concurrencyPreferences: ConcurrencyPreference[];
   handlerType(): typeof ProjectionHandlerType;
   concurrencyPreference(): ConcurrencyPreference;
-  interface(): ProjectionMessageHandler;
-  implementation(): ProjectionMessageHandler;
 };
 
 export type Handler = Aggregate | Process | Integration | Projection;
@@ -409,12 +392,11 @@ export type Application = {
   readonly kind: "application";
   readonly identityComponents: IdentityComponent[];
   readonly handlerComponents: Handler[];
-  readonly source: Optional<DogmaApplication>;
+  readonly app?: DogmaApplication;
   identity(): IdentityValue;
   handlers(): Handler[];
   handlerByName(name: string): Handler | undefined;
   routeSet(): RouteSet;
-  interface(): DogmaApplication;
   toString(): string;
 };
 
@@ -442,14 +424,14 @@ function validateIdentityComponent(
     throw new Error(`${entityDesc} is invalid: multiple identities specified`);
   }
   const id = identities[0];
-  if (!id.name.isPresent()) {
+  if (id.name === undefined) {
     throw new Error(`${entityDesc} is invalid: identity name is unavailable`);
   }
-  if (!id.key.isPresent()) {
+  if (id.key === undefined) {
     throw new Error(`${entityDesc} is invalid: identity key is unavailable`);
   }
-  const name = id.name.get();
-  const rawKey = id.key.get();
+  const name = id.name;
+  const rawKey = id.key;
 
   if (!isPrintableNonSpace(name)) {
     throw new Error(
@@ -485,16 +467,16 @@ function validateHandlerInternal(h: Handler): void {
   const seenRoutes = new Set<string>();
 
   for (const r of h.routeComponents) {
-    if (!r.routeType.isPresent()) {
+    if (r.routeType === undefined) {
       throw new Error(`${h.toString()} is invalid: route type is unavailable`);
     }
-    if (!r.messageTypeName.isPresent()) {
+    if (r.messageTypeName === undefined) {
       throw new Error(
         `${h.toString()} is invalid: message type name is unavailable`,
       );
     }
-    const rt = r.routeType.get();
-    const mn = r.messageTypeName.get();
+    const rt = r.routeType;
+    const mn = r.messageTypeName;
 
     if (caps[rt] === "disallowed") {
       throw new Error(
@@ -503,8 +485,8 @@ function validateHandlerInternal(h: Handler): void {
     }
     missing.delete(rt);
 
-    if (r.messageType.isPresent()) {
-      const mt = r.messageType.get();
+    if (r.messageType !== undefined) {
+      const mt = r.messageType;
       if (routeMessageKind(rt) !== mt.kind) {
         throw new Error(
           `${h.toString()} is invalid: unexpected message kind: ${mn} is a ${mt.kind}, expected a ${routeMessageKind(rt)}`,
@@ -523,7 +505,9 @@ function validateHandlerInternal(h: Handler): void {
 
   if (missing.size > 0) {
     const firstMissing = missing.values().next().value!;
-    throw new Error(`${h.toString()} (${id.name}) is invalid: no ${firstMissing} routes`);
+    throw new Error(
+      `${h.toString()} (${id.name}) is invalid: no ${firstMissing} routes`,
+    );
   }
 
   if (h.kind === "integration" || h.kind === "projection") {
@@ -550,9 +534,9 @@ function buildHandlerRouteSet(h: Handler): RouteSet {
   >();
 
   for (const r of h.routeComponents) {
-    if (!r.routeType.isPresent() || !r.messageType.isPresent()) continue;
-    const rt = r.routeType.get();
-    const mt = r.messageType.get();
+    if (r.routeType === undefined || r.messageType === undefined) continue;
+    const rt = r.routeType;
+    const mt = r.messageType;
 
     let byRouteType = byMessageType.get(mt);
     if (!byRouteType) {
@@ -595,9 +579,9 @@ function validateApplicationInternal(app: Application): void {
     byKey.set(hId.key, existingKey);
 
     for (const r of h.routeComponents) {
-      if (r.routeType.isPresent() && r.messageTypeName.isPresent()) {
-        const rt = r.routeType.get();
-        const mn = r.messageTypeName.get();
+      if (r.routeType !== undefined && r.messageTypeName !== undefined) {
+        const rt = r.routeType;
+        const mn = r.messageTypeName;
         if (
           rt === HandlesCommandRouteType ||
           rt === RecordsEventRouteType
@@ -679,13 +663,13 @@ function convertDogmaRoute(r: MessageRoute): Route {
       rt = SchedulesDeadlineRouteType;
       break;
   }
-  const reg = r.type();
+  const reg = r.typ;
   const mt = typeFromRegistered(reg);
   return {
-    routeType: some(rt),
-    messageTypeID: some(reg.id),
-    messageTypeName: some(reg.name),
-    messageType: some(mt),
+    routeType: rt,
+    messageTypeID: reg.id,
+    messageTypeName: reg.name,
+    messageType: mt,
     toString() {
       return `route:${rt}:${reg.name}`;
     },
@@ -702,14 +686,14 @@ export function fromAggregate(
   if (h) {
     const configurer: AggregateConfigurer = {
       identity(name: string, key: string) {
-        identityComponents.push({ name: some(name), key: some(key) });
+        identityComponents.push({ name, key });
       },
       routes(...routes: AggregateRoute[]) {
         for (const r of routes) {
           routeComponents.push(convertDogmaRoute(r));
         }
       },
-      disable(..._options: DisableOption[]) {
+      disable() {
         disabledFlags.push(true);
       },
     };
@@ -721,7 +705,7 @@ export function fromAggregate(
     identityComponents,
     routeComponents,
     disabledFlags,
-    source: h ? some(h) : none(),
+    handler: h ?? undefined,
     identity() {
       return validateIdentityComponent(this.toString(), identityComponents);
     },
@@ -736,16 +720,10 @@ export function fromAggregate(
         ? disabledFlags[disabledFlags.length - 1]
         : false;
     },
-    interface() {
-      return this.source.get();
-    },
-    implementation() {
-      return unwrapHandler(this.source.get());
-    },
     toString() {
       const name =
-        identityComponents.length > 0 && identityComponents[0].name.isPresent()
-          ? identityComponents[0].name.get()
+        identityComponents.length > 0 && identityComponents[0].name !== undefined
+          ? identityComponents[0].name
           : "?";
       return `aggregate:${name}`;
     },
@@ -761,14 +739,14 @@ export function fromProcess(h: ProcessMessageHandler<any>): Process {
   if (h) {
     const configurer: ProcessConfigurer = {
       identity(name: string, key: string) {
-        identityComponents.push({ name: some(name), key: some(key) });
+        identityComponents.push({ name, key });
       },
       routes(...routes: ProcessRoute[]) {
         for (const r of routes) {
           routeComponents.push(convertDogmaRoute(r));
         }
       },
-      disable(..._options: DisableOption[]) {
+      disable() {
         disabledFlags.push(true);
       },
     };
@@ -780,7 +758,7 @@ export function fromProcess(h: ProcessMessageHandler<any>): Process {
     identityComponents,
     routeComponents,
     disabledFlags,
-    source: h ? some(h) : none(),
+    handler: h ?? undefined,
     identity() {
       return validateIdentityComponent(this.toString(), identityComponents);
     },
@@ -795,16 +773,10 @@ export function fromProcess(h: ProcessMessageHandler<any>): Process {
         ? disabledFlags[disabledFlags.length - 1]
         : false;
     },
-    interface() {
-      return this.source.get();
-    },
-    implementation() {
-      return unwrapHandler(this.source.get());
-    },
     toString() {
       const name =
-        identityComponents.length > 0 && identityComponents[0].name.isPresent()
-          ? identityComponents[0].name.get()
+        identityComponents.length > 0 && identityComponents[0].name !== undefined
+          ? identityComponents[0].name
           : "?";
       return `process:${name}`;
     },
@@ -821,14 +793,14 @@ export function fromIntegration(h: IntegrationMessageHandler): Integration {
   if (h) {
     const configurer: IntegrationConfigurer = {
       identity(name: string, key: string) {
-        identityComponents.push({ name: some(name), key: some(key) });
+        identityComponents.push({ name, key });
       },
       routes(...routes: IntegrationRoute[]) {
         for (const r of routes) {
           routeComponents.push(convertDogmaRoute(r));
         }
       },
-      disable(..._options: DisableOption[]) {
+      disable() {
         disabledFlags.push(true);
       },
       concurrencyPreference(p: ConcurrencyPreference) {
@@ -844,7 +816,7 @@ export function fromIntegration(h: IntegrationMessageHandler): Integration {
     routeComponents,
     disabledFlags,
     concurrencyPreferences,
-    source: h ? some(h) : none(),
+    handler: h ?? undefined,
     identity() {
       return validateIdentityComponent(this.toString(), identityComponents);
     },
@@ -864,16 +836,10 @@ export function fromIntegration(h: IntegrationMessageHandler): Integration {
         ? concurrencyPreferences[concurrencyPreferences.length - 1]
         : MaximizeConcurrency;
     },
-    interface() {
-      return this.source.get();
-    },
-    implementation() {
-      return unwrapHandler(this.source.get());
-    },
     toString() {
       const name =
-        identityComponents.length > 0 && identityComponents[0].name.isPresent()
-          ? identityComponents[0].name.get()
+        identityComponents.length > 0 && identityComponents[0].name !== undefined
+          ? identityComponents[0].name
           : "?";
       return `integration:${name}`;
     },
@@ -890,14 +856,14 @@ export function fromProjection(h: ProjectionMessageHandler): Projection {
   if (h) {
     const configurer: ProjectionConfigurer = {
       identity(name: string, key: string) {
-        identityComponents.push({ name: some(name), key: some(key) });
+        identityComponents.push({ name, key });
       },
       routes(...routes: ProjectionRoute[]) {
         for (const r of routes) {
           routeComponents.push(convertDogmaRoute(r));
         }
       },
-      disable(..._options: DisableOption[]) {
+      disable() {
         disabledFlags.push(true);
       },
       concurrencyPreference(p: ConcurrencyPreference) {
@@ -913,7 +879,7 @@ export function fromProjection(h: ProjectionMessageHandler): Projection {
     routeComponents,
     disabledFlags,
     concurrencyPreferences,
-    source: h ? some(h) : none(),
+    handler: h ?? undefined,
     identity() {
       return validateIdentityComponent(this.toString(), identityComponents);
     },
@@ -933,16 +899,10 @@ export function fromProjection(h: ProjectionMessageHandler): Projection {
         ? concurrencyPreferences[concurrencyPreferences.length - 1]
         : MaximizeConcurrency;
     },
-    interface() {
-      return this.source.get();
-    },
-    implementation() {
-      return unwrapHandler(this.source.get());
-    },
     toString() {
       const name =
-        identityComponents.length > 0 && identityComponents[0].name.isPresent()
-          ? identityComponents[0].name.get()
+        identityComponents.length > 0 && identityComponents[0].name !== undefined
+          ? identityComponents[0].name
           : "?";
       return `projection:${name}`;
     },
@@ -957,7 +917,7 @@ export function fromApplication(app: DogmaApplication): Application {
   if (app) {
     const configurer: ApplicationConfigurer = {
       identity(name: string, key: string) {
-        identityComponents.push({ name: some(name), key: some(key) });
+        identityComponents.push({ name, key });
       },
       routes(...routes: HandlerRoute[]) {
         for (const r of routes) {
@@ -985,7 +945,7 @@ export function fromApplication(app: DogmaApplication): Application {
     kind: "application",
     identityComponents,
     handlerComponents,
-    source: app ? some(app) : none(),
+    app: app ?? undefined,
     identity() {
       return validateIdentityComponent(this.toString(), identityComponents);
     },
@@ -1029,13 +989,10 @@ export function fromApplication(app: DogmaApplication): Application {
       }
       return createRouteSet(merged);
     },
-    interface() {
-      return this.source.get();
-    },
     toString() {
       const name =
-        identityComponents.length > 0 && identityComponents[0].name.isPresent()
-          ? identityComponents[0].name.get()
+        identityComponents.length > 0 && identityComponents[0].name !== undefined
+          ? identityComponents[0].name
           : "?";
       return `application:${name}`;
     },
