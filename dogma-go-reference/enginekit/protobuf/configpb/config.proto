@@ -1,0 +1,72 @@
+edition = "2024";
+package dogma.protobuf;
+
+option go_package = "github.com/dogmatiq/enginekit/protobuf/configpb";
+
+import "github.com/dogmatiq/enginekit/protobuf/identitypb/identity.proto";
+
+// MessageKind is an enumeration of the kinds of message, represented by the
+// [dogma.Command], [dogma.Event], and [dogma.Deadline] interfaces.
+enum MessageKind {
+  UNKNOWN_MESSAGE_KIND = 0;
+  COMMAND              = 1;
+  EVENT                = 2;
+  DEADLINE             = 3;
+}
+
+// HandlerType is an enumeration of the types of handlers that an application
+// can contain.
+enum HandlerType {
+  UNKNOWN_HANDLER_TYPE = 0;
+  AGGREGATE            = 1;
+  PROCESS              = 2;
+  INTEGRATION          = 3;
+  PROJECTION           = 4;
+}
+
+// Application represents a Dogma application hosted by the engine on the
+// server.
+message Application {
+  // Identity is the application's identity.
+  Identity identity = 1;
+
+  // GoType is the fully-qualified name of the Go type that provides as the
+  // application's implementation.
+  string go_type = 2 [features.field_presence = IMPLICIT];
+
+  // Handlers is the set of handlers within the application.
+  repeated Handler handlers = 3;
+
+  // MessageKinds is a map of each message type's fully-qualified Go type to its
+  // the kind of message it implemented by that type.
+  map<string, MessageKind> messages = 4;
+}
+
+// Handler is a message handler within an application.
+message Handler {
+  // Identity is the handler's identity.
+  Identity identity = 1;
+
+  // GoType is the fully-qualified name of the Go type that provides as the
+  // handler's implementation.
+  string go_type = 2 [features.field_presence = IMPLICIT];
+
+  // Type is the handler's type.
+  HandlerType type = 3 [features.field_presence = IMPLICIT];
+
+  // messages is the set of messages produced and consumed by this handler.
+  //
+  // The keys are the fully-qualified names of the message's Go type.
+  map<string, MessageUsage> messages = 4;
+
+  // IsDisabled indicates whether the handler is disabled.
+  bool is_disabled = 5 [features.field_presence = IMPLICIT];
+}
+
+message MessageUsage {
+  // IsProduced indicates whether the message is produced by the handler.
+  bool is_produced = 2 [features.field_presence = IMPLICIT];
+
+  // IsConsumed indicates whether the message is consumed by the handler.
+  bool is_consumed = 3 [features.field_presence = IMPLICIT];
+}

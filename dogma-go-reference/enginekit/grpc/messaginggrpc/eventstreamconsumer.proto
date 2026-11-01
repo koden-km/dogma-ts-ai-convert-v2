@@ -1,0 +1,103 @@
+edition = "2024";
+package dogma.messaging.v1;
+
+option go_package = "github.com/dogmatiq/enginekit/grpc/messaginggrpc";
+
+import "github.com/dogmatiq/enginekit/protobuf/envelopepb/envelope.proto";
+import "github.com/dogmatiq/enginekit/protobuf/uuidpb/uuid.proto";
+
+// EventStreamConsumerAPI is a service for consuming event messages from
+// offset-based, ordered event streams.
+service EventStreamConsumerAPI {
+  // ListEventStreams returns the event streams offered by the server.
+  rpc ListEventStreams(ListEventStreamsRequest)
+      returns (stream ListEventStreamsResponse);
+
+  // ConsumeEvents returns event messages from a single stream, in order,
+  // starting from a specific offset within an event stream.
+  //
+  // The server delivers every event at or after the requested checkpoint offset
+  // whose message type ID is among those in the [ConsumeEventsRequest]. If no
+  // such events remain in the event stream, and the server cannot produce new
+  // events with any of the requested message type IDs, it closes the gRPC
+  // stream.
+  //
+  // If the requested stream ID is not recognized the server MUST return a
+  // NOT_FOUND error with an attached [UnrecognizedEventStream] value. See
+  // [UnrecognizedEventStreamError].
+  //
+  // If the requested offset is beyond the end of the stream an OUT_OF_RANGE
+  // error occurs.
+  rpc ConsumeEvents(ConsumeEventsRequest)
+      returns (stream ConsumeEventsResponse);
+}
+
+// ListEventStreamsRequest is the input to the
+// [EventStreamConsumerAPI.ListEventStreams] method.
+message ListEventStreamsRequest {}
+
+// ListEventStreamsResponse is the output of the
+// [EventStreamConsumerAPI.ListEventStreams] method.
+message ListEventStreamsResponse {
+  // EventStream is an event stream offered by the server.
+  EventStream event_stream = 1;
+}
+
+// EventStream describes an offset-based ordered event stream.
+message EventStream {
+  // EventStreamId is a unique identifier for the stream.
+  dogma.protobuf.UUID event_stream_id = 1;
+
+  // NextOffset is the offset of the next event that will be written to the
+  // stream. The first event in the stream is at offset zero; therefore,
+  // this value is equivalent to the number of events that have been written
+  // to the stream.
+  uint64 next_offset = 2 [features.field_presence = IMPLICIT];
+}
+
+// ConsumeEventsRequest is the input to the
+// [EventStreamConsumerAPI.ConsumeEvents] method.
+message ConsumeEventsRequest {
+  // EventStreamId is the ID from which events are consumed.
+  dogma.protobuf.UUID event_stream_id = 1;
+
+  // CheckpointOffset is the offset at which the consumer begins.
+  uint64 checkpoint_offset = 2 [features.field_presence = IMPLICIT];
+
+  // MessageTypeIds is the set of message type IDs of the event types to
+  // include in the responses.
+  repeated dogma.protobuf.UUID message_type_ids = 3;
+}
+
+// ConsumeEventsResponse is the (streaming) output of the
+// [EventStreamConsumerAPI.ConsumeEvents] method.
+//
+// It contains all of the events that match the requested message type IDs
+// specified in the [ConsumeEventsRequest], starting at the checkpoint offset up
+// to, but not including, the checkpoint offset in this response.
+//
+// The list of events may be empty, indicating that there are no matching events
+// in that range.
+message ConsumeEventsResponse {
+  // CheckpointOffset is the offset immediately after the range of the
+  // stream described by this response.
+  //
+  // After handling this and all preceding responses, the client may use
+  // this value as the checkpoint offset to resume consuming from the
+  // stream in a subsequent [ConsumeEventsRequest].
+  uint64 checkpoint_offset = 1 [features.field_presence = IMPLICIT];
+
+  // Envelopes is a (possibly empty) list of multi-envelopes containing
+  // events at offsets between the prior checkpoint offset and the
+  // checkpoint offset in this response.
+  //
+  // Each envelope includes the [envelopepb.EventStreamPosition] extension.
+  //
+  // The envelopes are ordered by the offset of the events they contain.
+  // There is no additional relationship implied between envelopes that
+  // appear in the same response.
+  //
+  // The offsets of the events within this response, or even within a
+  // single [envelopepb.MultiEnvelope] are not necessarily contiguous.
+  repeated dogma.protobuf.MultiEnvelope envelopes = 2;
+}

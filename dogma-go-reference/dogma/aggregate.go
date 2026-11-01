@@ -1,0 +1,240 @@
+package dogma
+
+// An AggregateMessageHandler encapsulates an application's "invariant" logic -
+// conditions that must always hold true.
+//
+// It handles [Command] messages and records [Event] messages that represent
+// changes to application state.
+//
+// An "aggregate" is a collection of related business entities that behave as a
+// cohesive whole, such as a shopping cart and the items within it. The
+// aggregate message handler manages the behavior and state of such aggregates.
+// The term doesn't refer to data aggregation or summarization.
+//
+// Each aggregate message handler typically manages multiple instances, where
+// each instance represents a distinct occurrence of the aggregate. For example,
+// a shopping cart aggregate might use one instance per customer.
+//
+// Aggregates enforce business rules that must always hold true for a specific
+// instance. For example, a shopping cart aggregate might prevent checkout if
+// the cart is empty, or limit the number of items to 10.
+//
+// The engine may call the handler's methods from multiple goroutines
+// concurrently.
+//
+// R is the application-defined [AggregateRoot] type for this handler.
+type AggregateMessageHandler[R AggregateRoot] interface {
+	// Configure declares the handler's configuration by calling methods on c.
+	//
+	// The configuration includes the handler's identity and message routes.
+	//
+	// The engine calls this method at least once during startup. It must
+	// produce the same configuration each time it's called.
+	Configure(c AggregateConfigurer)
+
+	// New returns a new value of R representing the initial state of an
+	// aggregate instance.
+	//
+	// The engine calls this method to get a "blank slate" when handling the
+	// first [Command] for a new instance or when reconstructing an existing
+	// instance from its historical [Event] messages.
+	New() R
+
+	// RouteCommandToInstance returns the ID of the aggregate instance that c
+	// targets.
+	//
+	// The return value must be a non-empty string that uniquely identifies the
+	// target instance. For example, in a shopping cart aggregate, the instance
+	// ID might be the customer's ID. RFC 9562 UUIDs are the recommended format.
+	//
+	// Commands routed to the same instance operate on the same state. There's
+	// no need to create an instance in advance - it "exists" once the handler
+	// records an [Event] against it.
+	//
+	// The engine calls this method before handling the [Command]. The
+	// implementation must derive the ID from information within c.
+	RouteCommandToInstance(c Command) string
+
+	// HandleCommand updates an aggregate instance's state by recording [Event]
+	// messages that represent the effects of a [Command].
+	//
+	// r is the [AggregateRoot] for the instance that the command targets, as
+	// determined by [AggregateMessageHandler].RouteCommandToInstance. It
+	// reflects the state of the targeted instance after applying its historical
+	// events.
+	//
+	// The implementation must not cause external side-effects or modify r
+	// directly. Logic must depend only on information within r, s, and c.
+	//
+	// The engine atomically persists the events recorded by exactly one
+	// successful invocation of this method for each command message. It doesn't
+	// guarantee the order, number, or concurrency of those attempts. The
+	// implementation doesn't need to perform any synchronization or idempotency
+	// checks.
+	//
+	// The handler may retain or mutate c and the values within it.
+	HandleCommand(
+		r R,
+		s AggregateCommandScope[R],
+		c Command,
+	)
+}
+
+// An AggregateRoot is an interface for an application's working representation
+// of an aggregate instance used within [AggregateMessageHandler]
+// implementations.
+//
+// It encapsulates business logic and provides a way to inspect the current
+// state when making decisions about which events to record. The recorded events
+// are the authoritative source of truth, not the AggregateRoot.
+type AggregateRoot interface {
+	// AggregateInstanceDescription returns a human-readable description of the
+	// aggregate instance's current state, for use in logging and telemetry.
+	//
+	// The description should be clear and relevant to developers and
+	// non-technical stakeholders familiar with the application's domain.
+	// It's not intended for display to end users.
+	//
+	// The description should not include the instance's identity.
+	//
+	// Use lowercase with no trailing punctuation. Omit sensitive
+	// information. For example: "3 items, awaiting payment".
+	//
+	// Return an empty string if the instance has no meaningful state to
+	// describe.
+	AggregateInstanceDescription() string
+
+	// ApplyEvent updates the aggregate instance to reflect the occurrence of an
+	// event.
+	//
+	// The engine calls this method when loading the instance from historical
+	// events or recording a new event. It must handle all historical event
+	// types, including those no longer routed to this aggregate.
+	//
+	// The root may retain or mutate e and the values within it.
+	ApplyEvent(e Event)
+
+	// MarshalBinary returns a binary representation of the aggregate instance's
+	// current state suitable for use as a snapshot.
+	//
+	// Snapshots are an optimization that reduces the number of events applied
+	// when loading an aggregate instance from its event history. Aggregates
+	// that produce few events over their instances' lifetime may omit snapshot
+	// support by embedding [NoSnapshotBehavior] or returning [ErrNotSupported].
+	MarshalBinary() ([]byte, error)
+
+	// UnmarshalBinary populates the aggregate instance's state from its binary
+	// representation.
+	//
+	// The implementation must clone the data if it is used after returning.
+	UnmarshalBinary(data []byte) error
+}
+
+// AggregateConfigurer is the interface an [AggregateMessageHandler] uses to
+// declare its configuration.
+//
+// The engine provides the implementation to
+// [AggregateMessageHandler].Configure during startup.
+type AggregateConfigurer interface {
+	HandlerConfigurer
+
+	// Routes declares the message types that the handler consumes and produces.
+	//
+	// It accepts routes created by [HandlesCommand] and [RecordsEvent].
+	Routes(...AggregateRoute)
+}
+
+// AggregateCommandScope represents the context within which an
+// [AggregateMessageHandler] handles a [Command] message.
+//
+// R is the application-defined [AggregateRoot] type for this handler.
+type AggregateCommandScope[R AggregateRoot] interface {
+	HandlerScope
+
+	// InstanceID returns the ID of the aggregate instance that the [Command]
+	// targets, as returned by [AggregateMessageHandler].RouteCommandToInstance.
+	InstanceID() string
+
+	// RecordEvent records an [Event] that results from handling the [Command].
+	//
+	// It applies the event to the aggregate root by calling
+	// [AggregateRoot].ApplyEvent, making the state changes visible to the
+	// handler immediately.
+	//
+	// The engine persists all events recorded within this scope in a single
+	// atomic operation after the [AggregateMessageHandler] finishes handling
+	// the inbound command.
+	RecordEvent(e Event)
+}
+
+// AggregateRoute describes a message type that's routed to or from a
+// [AggregateMessageHandler].
+type AggregateRoute interface {
+	MessageRoute
+	isAggregateRoute()
+}
+
+// NoSnapshotBehavior is an embeddable type for [AggregateRoot]
+// implementations that don't support binary snapshots.
+type NoSnapshotBehavior struct{}
+
+// MarshalBinary always returns [ErrNotSupported].
+func (NoSnapshotBehavior) MarshalBinary() ([]byte, error) {
+	return nil, ErrNotSupported
+}
+
+// UnmarshalBinary always returns [ErrNotSupported].
+func (NoSnapshotBehavior) UnmarshalBinary([]byte) error {
+	return ErrNotSupported
+}
+
+// UntypedAggregateMessageHandler returns a type-erased adaptor for h that
+// implements [AggregateMessageHandler] with [AggregateRoot] as the type
+// parameter.
+//
+// If h already has [AggregateRoot] as its type parameter, it is
+// returned unchanged.
+//
+// Use [UnwrapHandler] to recover the original handler from the returned value.
+func UntypedAggregateMessageHandler[R AggregateRoot](h AggregateMessageHandler[R]) AggregateMessageHandler[AggregateRoot] {
+	if h == nil {
+		panic("handler cannot be nil")
+	}
+
+	if u, ok := any(h).(AggregateMessageHandler[AggregateRoot]); ok {
+		return u
+	}
+
+	return &untypedAggregateMessageHandler[R]{h}
+}
+
+// untypedAggregateMessageHandler adapts an [AggregateMessageHandler] to
+// [AggregateMessageHandler] with [AggregateRoot] as the type parameter by
+// performing type assertions on the [AggregateRoot].
+type untypedAggregateMessageHandler[R AggregateRoot] struct {
+	handler AggregateMessageHandler[R]
+}
+
+func (a *untypedAggregateMessageHandler[R]) Configure(c AggregateConfigurer) {
+	a.handler.Configure(c)
+}
+
+func (a *untypedAggregateMessageHandler[R]) New() AggregateRoot {
+	return a.handler.New()
+}
+
+func (a *untypedAggregateMessageHandler[R]) RouteCommandToInstance(c Command) string {
+	return a.handler.RouteCommandToInstance(c)
+}
+
+func (a *untypedAggregateMessageHandler[R]) HandleCommand(
+	r AggregateRoot,
+	s AggregateCommandScope[AggregateRoot],
+	c Command,
+) {
+	a.handler.HandleCommand(r.(R), s, c)
+}
+
+func (a *untypedAggregateMessageHandler[R]) UnwrapHandler() any {
+	return a.handler
+}

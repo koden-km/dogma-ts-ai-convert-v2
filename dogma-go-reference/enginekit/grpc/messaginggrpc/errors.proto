@@ -1,0 +1,52 @@
+edition = "2024";
+package dogma.messaging.v1;
+
+option go_package = "github.com/dogmatiq/enginekit/grpc/messaginggrpc";
+
+import "github.com/dogmatiq/enginekit/protobuf/uuidpb/uuid.proto";
+
+// UnrecognizedApplication is an error-details value for NOT_FOUND errors that
+// occurred because a client requested an application that is unknown to the
+// server.
+message UnrecognizedApplication {
+  // ApplicationKey is the key of the unrecognized application.
+  dogma.protobuf.UUID application_key = 1;
+}
+
+// UnrecognizedEventStream is an error-details value for NOT_FOUND errors that
+// occurred because a client requested an unrecognized stream ID.
+message UnrecognizedEventStream {
+  // EventStreamId is the ID of the unrecognized stream.
+  dogma.protobuf.UUID event_stream_id = 1;
+}
+
+// UnrecognizedCommandType is an error-details value for INVALID_ARGUMENT
+// errors that occurred because a specific command type was not recognized by
+// the server, or is not executable within the target application.
+message UnrecognizedCommandType {
+  // MessageTypeId is the ID of the unrecognized command type.
+  dogma.protobuf.UUID message_type_id = 1;
+}
+
+// UnrecognizedEventType is an error-details value for INVALID_ARGUMENT errors
+// that occurred because a specific event type was not recognized by the
+// server.
+message UnrecognizedEventType {
+  // MessageTypeId is the ID of the unrecognized event type.
+  dogma.protobuf.UUID message_type_id = 1;
+}
+
+// MalformedMessage is an error-details value for INVALID_ARGUMENT errors that
+// occurred because a message's binary data could not be unmarshaled.
+message MalformedMessage {
+  // MessageTypeId is the ID of the message type that the data could not be
+  // unmarshaled as.
+  dogma.protobuf.UUID message_type_id = 1;
+}
+
+// InvalidMessage is an error-details value for INVALID_ARGUMENT errors that
+// occurred because a message failed the application's validation logic.
+message InvalidMessage {
+  // MessageTypeId is the ID of the type of the invalid message.
+  dogma.protobuf.UUID message_type_id = 1;
+}

@@ -1,0 +1,15 @@
+edition = "2024";
+
+package dogmatiq.enginekit.stubs;
+
+option go_package = "github.com/dogmatiq/enginekit/internal/stubs";
+
+message ProtoStubA {
+  string value = 1 [features.field_presence = IMPLICIT];
+}
+message ProtoStubB {
+  string value = 1 [features.field_presence = IMPLICIT];
+}
+message ProtoStubC {
+  string value = 1 [features.field_presence = IMPLICIT];
+}

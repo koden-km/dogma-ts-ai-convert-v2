@@ -1,0 +1,12 @@
+version: "3.8"
+
+services:
+  localstack:
+    image: localstack/localstack
+    ports:
+      - "24566:4566/tcp"
+
+  dynamodb:
+    image: amazon/dynamodb-local
+    ports:
+      - "28000:8000/tcp"

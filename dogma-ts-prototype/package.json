@@ -1,0 +1,20 @@
+{
+  "name": "dogma-ts",
+  "version": "0.0.1",
+  "description": "",
+  "license": "MIT",
+  "keywords": [],
+  "author": "",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "testing": "vitest"
+  },
+  "dependencies": {
+    "@types/node": "^25.3.2",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  }
+}

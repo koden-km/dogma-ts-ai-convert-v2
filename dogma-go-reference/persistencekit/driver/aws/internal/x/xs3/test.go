@@ -1,0 +1,93 @@
+package xs3
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/dogmatiq/persistencekit/internal/x/xtesting"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/localstack"
+)
+
+// NewTestClient returns a new S3 client for use in a test. It also returns the
+// endpoint as a host:port string.
+func NewTestClient(t testing.TB) (*s3.Client, string) {
+	container, err := localstack.Run(
+		t.Context(),
+		"localstack/localstack:4",
+
+		// Allow container reuse, but key it based on the same session ID that
+		// testcontainers does for starting the Ryuk reaper process; otherwise
+		// the container will be shutdown by the first reaper process that
+		// starts.
+		testcontainers.WithReuseByName(
+			fmt.Sprintf(
+				"dogmatiq-persistencekit-localstack-%s",
+				testcontainers.SessionID(),
+			),
+		),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	mappedPort, err := container.MappedPort(t.Context(), "4566/tcp")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	host, err := container.Host(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	hostPort := fmt.Sprintf("%s:%s", host, mappedPort.Port())
+	endpoint := fmt.Sprintf("http://%s", hostPort)
+
+	cfg, err := config.LoadDefaultConfig(
+		context.Background(),
+		config.WithRegion("us-east-1"),
+		config.WithCredentialsProvider(
+			credentials.NewStaticCredentialsProvider(
+				"test",
+				"test",
+				"",
+			),
+		),
+		config.WithRetryer(
+			func() aws.Retryer {
+				return aws.NopRetryer{}
+			},
+		),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return s3.NewFromConfig(
+		cfg,
+		func(opts *s3.Options) {
+			opts.BaseEndpoint = aws.String(endpoint)
+			opts.UsePathStyle = true
+		},
+	), hostPort
+}
+
+// CleanupBucket registers a t.Cleanup that deletes the given buckets and all
+// of their objects at the end of the test.
+func CleanupBucket(t testing.TB, client *s3.Client, buckets ...string) {
+	t.Helper()
+	t.Cleanup(func() {
+		ctx := xtesting.ContextForCleanup(t)
+		for _, bucket := range buckets {
+			if err := DeleteBucketIfExists(ctx, client, bucket, nil); err != nil {
+				t.Log(err)
+			}
+		}
+	})
+}

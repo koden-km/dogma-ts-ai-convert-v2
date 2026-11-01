@@ -1,0 +1,4 @@
+/artifacts/
+/.makefiles/
+/.vscode/
+**/testdata/rapid/

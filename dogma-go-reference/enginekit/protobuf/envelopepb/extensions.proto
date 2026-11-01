@@ -1,0 +1,19 @@
+edition = "2024";
+package dogma.protobuf;
+
+option go_package = "github.com/dogmatiq/enginekit/protobuf/envelopepb";
+
+import "github.com/dogmatiq/enginekit/protobuf/uuidpb/uuid.proto";
+
+// EventStreamPosition is an extension value for an [Envelope] that identifies
+// the stream from which an event was obtained, and the offset of the event
+// within that stream.
+message EventStreamPosition {
+  // StreamId is the identifier of the stream within which the event was
+  // recorded.
+  UUID stream_id = 1;
+
+  // Offset is the position of the event within the stream. The first event is
+  // at offset zero.
+  uint64 offset = 2 [features.field_presence = IMPLICIT];
+}

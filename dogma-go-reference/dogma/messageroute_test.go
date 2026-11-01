@@ -1,0 +1,148 @@
+package dogma_test
+
+import (
+	"reflect"
+	"testing"
+
+	. "github.com/dogmatiq/dogma"
+)
+
+func TestHandlesCommand(t *testing.T) {
+	t.Run("it returns a route containing the registered message type", func(t *testing.T) {
+		type T struct{ Command }
+		RegisterCommand[*T]("83c4a2d9-a728-49e6-83a3-6c670b99a173")
+
+		r := HandlesCommand[*T]()
+		expectType[HandlesCommandRoute](t, r)
+
+		got := r.Type().GoType()
+		want := reflect.TypeFor[*T]()
+
+		if got != want {
+			t.Fatalf("unexpected message type: got %s, want %s", got, want)
+		}
+	})
+
+	t.Run("it panics if the type is not in the registry", func(t *testing.T) {
+		expectPanic(
+			t,
+			"*github.com/dogmatiq/dogma_test.T is not in the message type registry",
+			func() {
+				type T struct{ Command }
+				HandlesCommand[*T]()
+			},
+		)
+	})
+}
+
+func TestExecutesCommand(t *testing.T) {
+	t.Run("it returns a route containing the registered message type", func(t *testing.T) {
+		type T struct{ Command }
+		RegisterCommand[*T]("7b8cf1fd-722e-4337-bc5c-9ce4f32ab9d4")
+
+		r := ExecutesCommand[*T]()
+		expectType[ExecutesCommandRoute](t, r)
+
+		got := r.Type().GoType()
+		want := reflect.TypeFor[*T]()
+
+		if got != want {
+			t.Fatalf("unexpected message type: got %s, want %s", got, want)
+		}
+	})
+
+	t.Run("it panics if the type is not in the registry", func(t *testing.T) {
+		expectPanic(
+			t,
+			"*github.com/dogmatiq/dogma_test.T is not in the message type registry",
+			func() {
+				type T struct{ Command }
+				ExecutesCommand[*T]()
+			},
+		)
+	})
+}
+
+func TestHandlesEvent(t *testing.T) {
+	t.Run("it returns a route containing the registered message type", func(t *testing.T) {
+		type T struct{ Event }
+		RegisterEvent[*T]("bef3014a-fca1-4cb3-90a3-ee83f5ca56c8")
+
+		r := HandlesEvent[*T]()
+		expectType[HandlesEventRoute](t, r)
+
+		got := r.Type().GoType()
+		want := reflect.TypeFor[*T]()
+
+		if got != want {
+			t.Fatalf("unexpected message type: got %s, want %s", got, want)
+		}
+	})
+
+	t.Run("it panics if the type is not in the registry", func(t *testing.T) {
+		expectPanic(
+			t,
+			"github.com/dogmatiq/dogma_test.T is not in the message type registry",
+			func() {
+				type T struct{ Event }
+				HandlesEvent[T]()
+			},
+		)
+	})
+}
+
+func TestRecordsEvent(t *testing.T) {
+	t.Run("it returns a route containing the registered message type", func(t *testing.T) {
+		type T struct{ Event }
+		RegisterEvent[*T]("19d21601-7d10-4aaa-85b5-248cf873b3d3")
+
+		r := RecordsEvent[*T]()
+		expectType[RecordsEventRoute](t, r)
+
+		got := r.Type().GoType()
+		want := reflect.TypeFor[*T]()
+
+		if got != want {
+			t.Fatalf("unexpected message type: got %s, want %s", got, want)
+		}
+	})
+
+	t.Run("it panics if the type is not in the registry", func(t *testing.T) {
+		expectPanic(
+			t,
+			"*github.com/dogmatiq/dogma_test.T is not in the message type registry",
+			func() {
+				type T struct{ Event }
+				RecordsEvent[*T]()
+			},
+		)
+	})
+}
+
+func TestSchedulesDeadline(t *testing.T) {
+	t.Run("it returns a route containing the registered message type", func(t *testing.T) {
+		type T struct{ Deadline }
+		RegisterDeadline[*T]("e11b5a92-e1ab-4a16-841a-9286b4e4d12f")
+
+		r := SchedulesDeadline[*T]()
+		expectType[SchedulesDeadlineRoute](t, r)
+
+		got := r.Type().GoType()
+		want := reflect.TypeFor[*T]()
+
+		if got != want {
+			t.Fatalf("unexpected message type: got %s, want %s", got, want)
+		}
+	})
+
+	t.Run("it panics if the type is not in the registry", func(t *testing.T) {
+		expectPanic(
+			t,
+			"*github.com/dogmatiq/dogma_test.T is not in the message type registry",
+			func() {
+				type T struct{ Deadline }
+				SchedulesDeadline[*T]()
+			},
+		)
+	})
+}

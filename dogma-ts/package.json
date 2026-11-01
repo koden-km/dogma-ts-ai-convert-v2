@@ -1,0 +1,21 @@
+{
+  "name": "dogma-ts",
+  "version": "0.0.1",
+  "description": "A port of Dogmatiq Dogma to Node.js TypeScript.",
+  "license": "MIT",
+  "keywords": [],
+  "author": "",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "testing": "vitest",
+    "start": "node --import ./loader.mjs src/example/cmd/bank/main.ts"
+  },
+  "dependencies": {
+    "@types/node": "^25.3.2",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  }
+}

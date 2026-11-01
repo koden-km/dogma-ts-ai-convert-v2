@@ -1,0 +1,10 @@
+[Dd]ogma
+[Dd]ogmatiq
+[Aa]ggregate
+[Aa]pp
+[Aa]pplication
+[Cc]onfigurer
+dogmavet
+projectionkit
+runkit
+testkit

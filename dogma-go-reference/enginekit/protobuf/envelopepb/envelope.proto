@@ -1,0 +1,134 @@
+edition = "2024";
+package dogma.protobuf;
+
+option go_package = "github.com/dogmatiq/enginekit/protobuf/envelopepb";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/any.proto";
+import "github.com/dogmatiq/enginekit/protobuf/identitypb/identity.proto";
+import "github.com/dogmatiq/enginekit/protobuf/uuidpb/uuid.proto";
+
+// Envelope is a container for a Dogma message and its meta-data.
+//
+// It is wire-compatible with [MultiEnvelope].
+message Envelope {
+  Header header = 1;
+  Body   body   = 2;
+}
+
+// MultiEnvelope is an efficient encoding of an ordered sequence of [Envelope]
+// values that share common header context.
+//
+message MultiEnvelope {
+  Header        header = 1;
+  repeated Body bodies = 2;
+}
+
+// Source identifies where a message originated.
+message Source {
+  // Site is the (optional) identity of the "site" that the source
+  // application is running within.
+  //
+  // The site is used to disambiguate between messages from different
+  // installations of the same application.
+  Identity site = 1;
+
+  // Application is the identity of the Dogma application that produced the
+  // message.
+  Identity application = 2;
+
+  // Handler is the identity of the Dogma handler that produced the message.
+  //
+  // It is the zero-value if the message was not produced by a handler.
+  Identity handler = 3;
+
+  // InstanceId is the ID of the aggregate or process instance that produced
+  // the message.
+  //
+  // It is empty if the message was not produced by an aggregate or process
+  // handler.
+  string instance_id = 4 [features.field_presence = IMPLICIT];
+}
+
+// Message is the serialized representation of a [dogma.Message].
+message Message {
+  // TypeId is a unique identifier for the type of message, as per the Dogma
+  // message type registry.
+  UUID type_id = 1;
+
+  // Description is a human-readable description of the message, as returned by
+  // the [dogma.Message.MessageDescription] method.
+  string description = 2 [features.field_presence = IMPLICIT];
+
+  // Data is the binary message data obtained by calling
+  // [dogma.Message.MarshalBinary] on the message.
+  bytes data = 3 [features.field_presence = IMPLICIT];
+}
+
+message Header {
+  // CausationId is the (optional) ID of the message that was the direct cause
+  // of the messages.
+  //
+  // If it is the zero-value, the messages were not caused by any other
+  // message.
+  UUID causation_id = 1;
+
+  // CorrelationId is the (optional) ID of the first ancestor of the messages
+  // that was itself not caused by another message, that is, it's the root of
+  // the message chain that ultimately resulted in these messages.
+  //
+  // If it is the zero-value, the messages were not caused by any other
+  // message.
+  UUID correlation_id = 2;
+
+  // Source identifies the origin of the messages.
+  Source source = 3;
+
+  // Extensions is a set of extension values associated with the messages,
+  // their causal chain, or the envelope itself.
+  repeated google.protobuf.Any extensions = 4;
+
+  // Baggage is a set of extension values that are propagated through the
+  // entire causal chain of messages.
+  repeated google.protobuf.Any baggage = 5;
+}
+
+// Body contains the metadata and encoded form of a single message in an
+// [Envelope] or [MultiEnvelope].
+message Body {
+  // MessageId is a unique identifier for the message in this envelope.
+  UUID message_id = 1;
+
+  // IdempotencyKey is an application-defined value used to identify a command
+  // across retries.
+  //
+  // It is the zero-value if the message is not a command, or if the producer
+  // of the message did not provide an idempotency key.
+  string idempotency_key = 2 [features.field_presence = IMPLICIT];
+
+  // CreatedAt is the time at which the envelope was created.
+  //
+  // This is typically the point at which the message first enters the engine.
+  google.protobuf.Timestamp created_at = 3;
+
+  // ScheduledFor is the time at which a deadline is reached.
+  //
+  // It is the zero-value if the message is a command or event.
+  google.protobuf.Timestamp scheduled_for = 4;
+
+  // Message is the encoded representation of the [dogma.Message].
+  Message message = 5;
+
+  // Extensions is a set of extension values associated with this message.
+  //
+  // Any values in [Header.Extensions] are overridden by values in this field
+  // that have the same type URL.
+  repeated google.protobuf.Any extensions = 6;
+
+  // Baggage is a set of extension values associated with this message and/or
+  // its causal chain.
+  //
+  // Any values in [Header.Baggage] are overridden by values in this field
+  // that have the same type URL.
+  repeated google.protobuf.Any baggage = 7;
+}

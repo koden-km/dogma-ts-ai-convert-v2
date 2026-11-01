@@ -1,0 +1,20 @@
+edition = "2024";
+package dogma.config.v1;
+
+option go_package = "github.com/dogmatiq/enginekit/grpc/configgrpc";
+
+import "github.com/dogmatiq/enginekit/protobuf/configpb/config.proto";
+
+// ConfigAPI is a service for inspecting the configuration of Dogma applications
+// hosted by the engine on the server.
+service ConfigAPI {
+  // ListApplications returns the full configuration of all applications.
+  rpc ListApplications(ListApplicationsRequest)
+      returns (ListApplicationsResponse);
+}
+
+message ListApplicationsRequest {}
+
+message ListApplicationsResponse {
+  repeated dogma.protobuf.Application applications = 1;
+}
