@@ -13,8 +13,9 @@
   `dogma.UntypedAggregateMessageHandler.`, `dogma.UntypedProcessMessageHandler`,
   and `dogma.UnwrapHandler`). In Typescript, they are not actually needed!
 
-- [ ] There are a lot of `any` types being used. I think that was required for Go
-  to be more dynamic, but probably not required for Typescript?
+- [ ] There are a lot of `any` types being used, and some `unknown`'s. I think
+  that was required for Go to be more dynamic, but probably not required for
+  Typescript?
 
 - [ ] Should `message.ts` `Message`.`type` be renamed to `kind`? That seems to be
   how it is referenced elsewhere. It also avoids the common "type" word and is
@@ -30,10 +31,12 @@
 - [ ] There are a few references to "In idiomatic Typescript" (dogma: aggregate.ts
   and process.ts)
 
-- [ ] The `dogma/error.ts` constant types (`ErrNotSupported`,
+- [x] The `dogma/error.ts` constant types (`ErrNotSupported`,
   `ErrEventObserverNotSatisfied`) are never used. The errors are always just
   thrown directly. Possibly just another Go quirk since it needed special cases
   for error recovery?
+  _Update:_
+  Not needed and will be removed along with other Go'isms.
 
 - [ ] `src/example/cmd/bank/main.ts` has errors in VSCode for the use of `process`.
   > "Cannot find name 'process'. Do you need to install type definitions for
