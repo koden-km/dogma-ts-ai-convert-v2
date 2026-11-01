@@ -75,12 +75,3 @@ export type HandlerScope = {
   // information.
   log(format: string, ...args: any[]): void;
 };
-
-// unwrapHandler returns the innermost handler wrapped by h.
-export function unwrapHandler(h: any): any {
-  let curr = h;
-  while (curr && typeof curr.unwrapHandler === "function") {
-    curr = curr.unwrapHandler();
-  }
-  return curr;
-}

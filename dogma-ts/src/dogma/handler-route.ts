@@ -1,14 +1,6 @@
-import {
-  type AggregateMessageHandler,
-  type AggregateRoot,
-  untypedAggregateMessageHandler,
-} from "./aggregate.ts";
+import type { AggregateMessageHandler, AggregateRoot } from "./aggregate.ts";
 import type { IntegrationMessageHandler } from "./integration.ts";
-import {
-  type ProcessMessageHandler,
-  type ProcessRoot,
-  untypedProcessMessageHandler,
-} from "./process.ts";
+import type { ProcessMessageHandler, ProcessRoot } from "./process.ts";
 import type { ProjectionMessageHandler } from "./projection.ts";
 
 export type HandlerRouteKind =
@@ -19,14 +11,14 @@ export type HandlerRouteKind =
 
 export type AggregateHandlerRoute = {
   readonly kind: "Aggregate";
-  readonly handler: AggregateMessageHandler<AggregateRoot>;
-  handlerValue(): AggregateMessageHandler<AggregateRoot>;
+  readonly handler: AggregateMessageHandler<any>;
+  handlerValue(): AggregateMessageHandler<any>;
 };
 
 export type ProcessHandlerRoute = {
   readonly kind: "Process";
-  readonly handler: ProcessMessageHandler<ProcessRoot>;
-  handlerValue(): ProcessMessageHandler<ProcessRoot>;
+  readonly handler: ProcessMessageHandler<any>;
+  handlerValue(): ProcessMessageHandler<any>;
 };
 
 export type IntegrationHandlerRoute = {
@@ -74,12 +66,11 @@ export function viaAggregate<RootT extends AggregateRoot>(
   if (!handler) {
     throw new Error("handler cannot be null or undefined");
   }
-  const untyped = untypedAggregateMessageHandler(handler);
   return {
     kind: "Aggregate",
-    handler: untyped,
+    handler,
     handlerValue() {
-      return untyped;
+      return handler;
     },
   };
 }
@@ -93,12 +84,11 @@ export function viaProcess<RootT extends ProcessRoot>(
   if (!handler) {
     throw new Error("handler cannot be null or undefined");
   }
-  const untyped = untypedProcessMessageHandler(handler);
   return {
     kind: "Process",
-    handler: untyped,
+    handler,
     handlerValue() {
-      return untyped;
+      return handler;
     },
   };
 }

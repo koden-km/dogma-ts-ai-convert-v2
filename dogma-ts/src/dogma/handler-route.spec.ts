@@ -6,7 +6,6 @@ import {
   viaProcess,
   viaProjection,
 } from "./handler-route.ts";
-import { unwrapHandler } from "./handler.ts";
 import type { IntegrationMessageHandler } from "./integration.ts";
 import type { ProcessMessageHandler } from "./process.ts";
 import type { ProjectionMessageHandler } from "./projection.ts";
@@ -22,7 +21,7 @@ describe("handler-route", () => {
       };
       const r = viaAggregate(h);
       expect(r.kind).toBe("Aggregate");
-      expect(unwrapHandler(r.handler)).toBe(h);
+      expect(r.handler).toBe(h);
     });
 
     it("throws if the handler is null", () => {
@@ -43,7 +42,7 @@ describe("handler-route", () => {
       };
       const r = viaProcess(h);
       expect(r.kind).toBe("Process");
-      expect(unwrapHandler(r.handler)).toBe(h);
+      expect(r.handler).toBe(h);
     });
 
     it("throws if the handler is null", () => {
