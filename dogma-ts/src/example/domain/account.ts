@@ -130,13 +130,13 @@ export const AccountHandler: AggregateMessageHandler<Account> = {
 function openAccount(
   r: Account,
   s: AggregateCommandScope<Account>,
-  { data: m }: OpenAccount,
+  c: OpenAccount,
 ) {
+  const { data: m } = c;
   if (r.name !== "") {
     s.log("account has already been opened");
     return;
   }
-
   s.recordEvent(
     createEvent(EventName.AccountOpened, {
       customerID: m.customerID,
@@ -149,8 +149,9 @@ function openAccount(
 function creditAccount(
   _r: Account,
   s: AggregateCommandScope<Account>,
-  { data: m }: CreditAccount,
+  c: CreditAccount,
 ) {
+  const { data: m } = c;
   s.recordEvent(
     createEvent(EventName.AccountCredited, {
       transactionID: m.transactionID,
@@ -164,31 +165,50 @@ function creditAccount(
 function debitAccount(
   r: Account,
   s: AggregateCommandScope<Account>,
-  { data: m }: DebitAccount,
+  c: DebitAccount,
 ) {
-  if (hasSufficientFunds(r, m.amount)) {
-    s.recordEvent(
-      createEvent(EventName.AccountDebited, {
-        transactionID: m.transactionID,
-        accountID: m.accountID,
-        transactionType: m.transactionType,
-        amount: m.amount,
-        scheduledTime: m.scheduledTime,
-      }),
-    );
-  } else {
-    s.recordEvent(
-      createEvent(EventName.AccountDebitDeclined, {
-        transactionID: m.transactionID,
-        accountID: m.accountID,
-        transactionType: m.transactionType,
-        amount: m.amount,
-        reason: DebitFailureReason.InsufficientFunds,
-      }),
-    );
+  const { data: m } = c;
+  if (!hasSufficientFunds(r.balance, m.amount)) {
+    declineAccountDebitDueToInsufficientFunds(r, s, c);
+    return;
   }
+  debitFundsFromAccount(r, s, c);
 }
 
-function hasSufficientFunds(r: Account, amount: bigint): boolean {
-  return r.balance >= amount;
+function debitFundsFromAccount(
+  r: Account,
+  s: AggregateCommandScope<Account>,
+  c: DebitAccount,
+) {
+  const { data: m } = c;
+  s.recordEvent(
+    createEvent(EventName.AccountDebited, {
+      transactionID: m.transactionID,
+      accountID: m.accountID,
+      transactionType: m.transactionType,
+      amount: m.amount,
+      scheduledTime: m.scheduledTime,
+    }),
+  );
+}
+
+function declineAccountDebitDueToInsufficientFunds(
+  r: Account,
+  s: AggregateCommandScope<Account>,
+  c: DebitAccount,
+) {
+  const { data: m } = c;
+  s.recordEvent(
+    createEvent(EventName.AccountDebitDeclined, {
+      transactionID: m.transactionID,
+      accountID: m.accountID,
+      transactionType: m.transactionType,
+      amount: m.amount,
+      reason: DebitFailureReason.InsufficientFunds,
+    }),
+  );
+}
+
+function hasSufficientFunds(balance: bigint, amount: bigint): boolean {
+  return balance >= amount;
 }

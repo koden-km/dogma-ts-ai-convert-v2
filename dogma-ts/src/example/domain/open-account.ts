@@ -14,6 +14,7 @@ import {
 import {
   CommandName,
   createCommand,
+  CustomerAcquired,
   type DomainEvent,
   EventName,
 } from "../messages/index.ts";
@@ -56,13 +57,7 @@ export const OpenAccountForNewCustomerProcessHandler: ProcessMessageHandler<Stat
       const m = e as DomainEvent;
       switch (m.name) {
         case EventName.CustomerAcquired:
-          s.executeCommand(
-            createCommand(CommandName.OpenAccount, {
-              customerID: m.data.customerID,
-              accountID: m.data.accountID,
-              accountName: m.data.accountName,
-            }),
-          );
+          openAccount(s, m);
           s.end();
           return;
         default:
@@ -70,3 +65,17 @@ export const OpenAccountForNewCustomerProcessHandler: ProcessMessageHandler<Stat
       }
     },
   };
+
+function openAccount(
+  s: ProcessEventScope<StatelessProcessRoot>,
+  e: CustomerAcquired,
+) {
+  const { data: m } = e;
+  s.executeCommand(
+    createCommand(CommandName.OpenAccount, {
+      customerID: m.customerID,
+      accountID: m.accountID,
+      accountName: m.accountName,
+    }),
+  );
+}

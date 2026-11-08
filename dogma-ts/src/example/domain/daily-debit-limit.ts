@@ -88,34 +88,68 @@ export const DailyDebitLimitHandler: AggregateMessageHandler<DailyDebitLimit> =
       const m = c as DomainCommand;
       switch (m.name) {
         case CommandName.ConsumeDailyDebitLimit:
-          if (r.totalDebitsForDay + m.data.amount > maximumDailyDebitLimit) {
-            s.recordEvent(
-              createEvent(EventName.DailyDebitLimitExceeded, {
-                transactionID: m.data.transactionID,
-                accountID: m.data.accountID,
-                debitType: m.data.debitType,
-                amount: m.data.amount,
-                date: m.data.date,
-                totalDebitsForDay: r.totalDebitsForDay,
-                dailyLimit: maximumDailyDebitLimit,
-              }),
-            );
-          } else {
-            s.recordEvent(
-              createEvent(EventName.DailyDebitLimitConsumed, {
-                transactionID: m.data.transactionID,
-                accountID: m.data.accountID,
-                debitType: m.data.debitType,
-                amount: m.data.amount,
-                date: m.data.date,
-                totalDebitsForDay: r.totalDebitsForDay + m.data.amount,
-                dailyLimit: maximumDailyDebitLimit,
-              }),
-            );
-          }
+          attemptDebit(r, s, m);
           return;
         default:
           throw new UnexpectedMessageError();
       }
     },
   };
+
+function attemptDebit(
+  r: DailyDebitLimit,
+  s: AggregateCommandScope<DailyDebitLimit>,
+  c: ConsumeDailyDebitLimit,
+) {
+  const { data: m } = c;
+  if (amountExceedsLimit(r.totalDebitsForDay, m.amount)) {
+    rejectDebitDueToExceedingLimit(r, s, c);
+    return;
+  }
+  consumeAmountFromLimit(r, s, c);
+}
+
+function rejectDebitDueToExceedingLimit(
+  r: DailyDebitLimit,
+  s: AggregateCommandScope<DailyDebitLimit>,
+  c: ConsumeDailyDebitLimit,
+) {
+  const { data: m } = c;
+  s.recordEvent(
+    createEvent(EventName.DailyDebitLimitExceeded, {
+      transactionID: m.transactionID,
+      accountID: m.accountID,
+      debitType: m.debitType,
+      amount: m.amount,
+      date: m.date,
+      totalDebitsForDay: r.totalDebitsForDay,
+      dailyLimit: maximumDailyDebitLimit,
+    }),
+  );
+}
+
+function consumeAmountFromLimit(
+  r: DailyDebitLimit,
+  s: AggregateCommandScope<DailyDebitLimit>,
+  c: ConsumeDailyDebitLimit,
+) {
+  const { data: m } = c;
+  s.recordEvent(
+    createEvent(EventName.DailyDebitLimitConsumed, {
+      transactionID: m.transactionID,
+      accountID: m.accountID,
+      debitType: m.debitType,
+      amount: m.amount,
+      date: m.date,
+      totalDebitsForDay: r.totalDebitsForDay + m.amount,
+      dailyLimit: maximumDailyDebitLimit,
+    }),
+  );
+}
+
+function amountExceedsLimit(
+  totalDebitsForDay: bigint,
+  amount: bigint,
+): boolean {
+  return totalDebitsForDay + amount > maximumDailyDebitLimit;
+}

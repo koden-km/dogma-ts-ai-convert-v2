@@ -16,14 +16,22 @@ import {
   UnexpectedMessageError,
 } from "@/dogma/index.ts";
 import {
+  AccountCredited,
+  AccountDebitDeclined,
+  AccountDebited,
   CommandName,
   createCommand,
+  DailyDebitLimitConsumed,
   dailyDebitLimitDate,
+  DailyDebitLimitExceeded,
   DebitFailureReason,
   type DomainEvent,
   EventName,
   formatAmount,
+  ThirdPartyAccountCredited,
+  ThirdPartyAccountCreditFailed,
   TransactionType,
+  TransferStarted,
 } from "../messages/index.ts";
 
 export const DeadlineName = {
@@ -161,158 +169,41 @@ export const TransferProcessHandler: ProcessMessageHandler<TransferProcess> = {
 
   handleEvent(
     _ctx: Context,
-    t: TransferProcess,
+    p: TransferProcess,
     s: ProcessEventScope<TransferProcess>,
     e: Event,
   ): void {
     const m = e as DomainEvent;
     switch (m.name) {
-      case EventName.TransferStarted: {
-        s.mutate((root) => {
-          root.fromAccountID = m.data.fromAccountID;
-          root.toAccountID = m.data.toAccountID;
-          root.toThirdPartyBank = Boolean(m.data.toThirdPartyBank);
-          root.amount = m.data.amount;
-        });
-
-        const scheduledAt =
-          typeof m.data.scheduledTime === "string"
-            ? new Date(m.data.scheduledTime)
-            : m.data.scheduledTime;
-
-        s.scheduleDeadline(
-          createDeadline(DeadlineName.TransferReadyToProceed, {
-            transactionID: m.data.transactionID,
-          }),
-          scheduledAt,
-        );
+      case EventName.TransferStarted:
+        scheduleTransfer(p, s, m);
         return;
-      }
-
       case EventName.AccountDebited:
-        s.executeCommand(
-          createCommand(CommandName.ConsumeDailyDebitLimit, {
-            transactionID: m.data.transactionID,
-            accountID: m.data.accountID,
-            debitType: TransactionType.Transfer,
-            amount: m.data.amount,
-            date: dailyDebitLimitDate(m.data.scheduledTime),
-          }),
-        );
+        consumeDailyDebitLimit(p, s, m);
         return;
-
       case EventName.AccountDebitDeclined:
-        s.executeCommand(
-          createCommand(CommandName.DeclineTransfer, {
-            transactionID: m.data.transactionID,
-            fromAccountID: t.fromAccountID,
-            toAccountID: t.toAccountID,
-            amount: m.data.amount,
-            reason: m.data.reason,
-          }),
-        );
+        declineTransferDueToDeclinedDebit(p, s, m);
         return;
-
       case EventName.DailyDebitLimitConsumed:
-        if (t.toThirdPartyBank) {
-          s.executeCommand(
-            createCommand(CommandName.CreditThirdPartyAccount, {
-              transactionID: m.data.transactionID,
-              accountID: t.toAccountID,
-              amount: m.data.amount,
-            }),
-          );
-        } else {
-          s.executeCommand(
-            createCommand(CommandName.CreditAccount, {
-              transactionID: m.data.transactionID,
-              accountID: t.toAccountID,
-              transactionType: TransactionType.Transfer,
-              amount: m.data.amount,
-            }),
-          );
-        }
+        creditAccountForTransfer(p, s, m);
         return;
-
       case EventName.DailyDebitLimitExceeded:
-        s.mutate((root) => {
-          root.declineReason = DebitFailureReason.DailyDebitLimitExceeded;
-        });
-
-        // compensate the initial debit
-        s.executeCommand(
-          createCommand(CommandName.CreditAccount, {
-            transactionID: m.data.transactionID,
-            accountID: t.fromAccountID,
-            transactionType: TransactionType.Transfer,
-            amount: m.data.amount,
-          }),
-        );
+        refundDebitDueToDailyLimitExceeded(p, s, m);
         return;
-
       case EventName.AccountCredited:
-        if (t.toAccountID === m.data.accountID) {
-          // it was a credit to complete the transfer (success)
-          s.executeCommand(
-            createCommand(CommandName.ApproveTransfer, {
-              transactionID: m.data.transactionID,
-              fromAccountID: t.fromAccountID,
-              toAccountID: t.toAccountID,
-              amount: m.data.amount,
-            }),
-          );
-        } else {
-          // it was a compensating credit to undo the transfer (business rejection)
-          s.executeCommand(
-            createCommand(CommandName.DeclineTransfer, {
-              transactionID: m.data.transactionID,
-              fromAccountID: t.fromAccountID,
-              toAccountID: t.toAccountID,
-              amount: m.data.amount,
-              reason:
-                t.declineReason || DebitFailureReason.DailyDebitLimitExceeded,
-            }),
-          );
-        }
+        completeInternalTransfer(p, s, m);
         return;
-
       case EventName.ThirdPartyAccountCredited:
-        s.executeCommand(
-          createCommand(CommandName.ApproveTransfer, {
-            transactionID: m.data.transactionID,
-            fromAccountID: t.fromAccountID,
-            toAccountID: t.toAccountID,
-            amount: t.amount,
-          }),
-        );
+        approveExternalTransfer(p, s, m);
         return;
-
       case EventName.ThirdPartyAccountCreditFailed:
-        s.executeCommand(
-          createCommand(CommandName.MarkTransferAsFailed, {
-            transactionID: m.data.transactionID,
-            fromAccountID: t.fromAccountID,
-            toAccountID: t.toAccountID,
-            amount: t.amount,
-          }),
-        );
-
-        s.executeCommand(
-          createCommand(CommandName.CreditAccount, {
-            transactionID: m.data.transactionID,
-            accountID: t.fromAccountID,
-            transactionType: TransactionType.Transfer,
-            amount: t.amount,
-          }),
-        );
+        refundTransferDueToFailedExternalCredit(p, s, m);
         return;
-
       case EventName.TransferApproved:
       case EventName.TransferDeclined:
       case EventName.TransferFailed:
         s.end();
         return;
-
       default:
         throw new UnexpectedMessageError();
     }
@@ -320,25 +211,262 @@ export const TransferProcessHandler: ProcessMessageHandler<TransferProcess> = {
 
   handleDeadline(
     _ctx: Context,
-    t: TransferProcess,
+    p: TransferProcess,
     s: ProcessDeadlineScope<TransferProcess>,
     d: Deadline,
   ): void {
     const m = d as TransferReadyToProceed;
     switch (m.name) {
       case DeadlineName.TransferReadyToProceed:
-        s.executeCommand(
-          createCommand(CommandName.DebitAccount, {
-            transactionID: m.data.transactionID,
-            accountID: t.fromAccountID,
-            transactionType: TransactionType.Transfer,
-            amount: t.amount,
-            scheduledTime: s.scheduledFor(),
-          }),
-        );
+        debitAccountForTransfer(p, s, m);
         return;
       default:
         throw new UnexpectedMessageError();
     }
   },
 };
+
+function scheduleTransfer(
+  p: TransferProcess,
+  s: ProcessEventScope<TransferProcess>,
+  e: TransferStarted,
+) {
+  const { data: m } = e;
+  s.mutate((root) => {
+    root.fromAccountID = m.fromAccountID;
+    root.toAccountID = m.toAccountID;
+    root.toThirdPartyBank = Boolean(m.toThirdPartyBank);
+    root.amount = m.amount;
+  });
+
+  const scheduledAt =
+    typeof m.scheduledTime === "string"
+      ? new Date(m.scheduledTime)
+      : m.scheduledTime;
+
+  s.scheduleDeadline(
+    createDeadline(DeadlineName.TransferReadyToProceed, {
+      transactionID: m.transactionID,
+    }),
+    scheduledAt,
+  );
+}
+
+function consumeDailyDebitLimit(
+  p: TransferProcess,
+  s: ProcessEventScope<TransferProcess>,
+  e: AccountDebited,
+) {
+  const { data: m } = e;
+  s.executeCommand(
+    createCommand(CommandName.ConsumeDailyDebitLimit, {
+      transactionID: m.transactionID,
+      accountID: m.accountID,
+      debitType: TransactionType.Transfer,
+      amount: m.amount,
+      date: dailyDebitLimitDate(m.scheduledTime),
+    }),
+  );
+}
+
+function declineTransferDueToDeclinedDebit(
+  p: TransferProcess,
+  s: ProcessEventScope<TransferProcess>,
+  e: AccountDebitDeclined,
+) {
+  const { data: m } = e;
+  s.executeCommand(
+    createCommand(CommandName.DeclineTransfer, {
+      transactionID: m.transactionID,
+      fromAccountID: p.fromAccountID,
+      toAccountID: p.toAccountID,
+      amount: m.amount,
+      reason: m.reason,
+    }),
+  );
+}
+
+function creditAccountForTransfer(
+  p: TransferProcess,
+  s: ProcessEventScope<TransferProcess>,
+  e: DailyDebitLimitConsumed,
+) {
+  if (p.toThirdPartyBank) {
+    creditExternalAccount(p, s, e);
+  } else {
+    creditInternalAccount(p, s, e);
+  }
+}
+
+function creditExternalAccount(
+  p: TransferProcess,
+  s: ProcessEventScope<TransferProcess>,
+  e: DailyDebitLimitConsumed,
+) {
+  const { data: m } = e;
+  s.executeCommand(
+    createCommand(CommandName.CreditThirdPartyAccount, {
+      transactionID: m.transactionID,
+      accountID: p.toAccountID,
+      amount: m.amount,
+    }),
+  );
+}
+
+function creditInternalAccount(
+  p: TransferProcess,
+  s: ProcessEventScope<TransferProcess>,
+  e: DailyDebitLimitConsumed,
+) {
+  const { data: m } = e;
+  s.executeCommand(
+    createCommand(CommandName.CreditAccount, {
+      transactionID: m.transactionID,
+      accountID: p.toAccountID,
+      transactionType: TransactionType.Transfer,
+      amount: m.amount,
+    }),
+  );
+}
+
+function refundDebitDueToDailyLimitExceeded(
+  p: TransferProcess,
+  s: ProcessEventScope<TransferProcess>,
+  e: DailyDebitLimitExceeded,
+) {
+  const { data: m } = e;
+  s.mutate((root) => {
+    root.declineReason = DebitFailureReason.DailyDebitLimitExceeded;
+  });
+  // compensate the initial debit
+  s.executeCommand(
+    createCommand(CommandName.CreditAccount, {
+      transactionID: m.transactionID,
+      accountID: p.fromAccountID,
+      transactionType: TransactionType.Transfer,
+      amount: m.amount,
+    }),
+  );
+}
+
+function completeInternalTransfer(
+  p: TransferProcess,
+  s: ProcessEventScope<TransferProcess>,
+  e: AccountCredited,
+) {
+  const { data: m } = e;
+  if (p.toAccountID === m.accountID) {
+    // it was a credit to complete the transfer (success)
+    approveInternalTransfer(p, s, e);
+  } else {
+    // it was a compensating credit to undo the transfer (business rejection)
+    declineInternalTransfer(p, s, e);
+  }
+}
+
+function approveInternalTransfer(
+  p: TransferProcess,
+  s: ProcessEventScope<TransferProcess>,
+  e: AccountCredited,
+) {
+  const { data: m } = e;
+  s.executeCommand(
+    createCommand(CommandName.ApproveTransfer, {
+      transactionID: m.transactionID,
+      fromAccountID: p.fromAccountID,
+      toAccountID: p.toAccountID,
+      amount: m.amount,
+    }),
+  );
+}
+
+function declineInternalTransfer(
+  p: TransferProcess,
+  s: ProcessEventScope<TransferProcess>,
+  e: AccountCredited,
+) {
+  const { data: m } = e;
+  s.executeCommand(
+    createCommand(CommandName.DeclineTransfer, {
+      transactionID: m.transactionID,
+      fromAccountID: p.fromAccountID,
+      toAccountID: p.toAccountID,
+      amount: m.amount,
+      reason: p.declineReason || DebitFailureReason.DailyDebitLimitExceeded,
+    }),
+  );
+}
+
+function approveExternalTransfer(
+  p: TransferProcess,
+  s: ProcessEventScope<TransferProcess>,
+  e: ThirdPartyAccountCredited,
+) {
+  const { data: m } = e;
+  s.executeCommand(
+    createCommand(CommandName.ApproveTransfer, {
+      transactionID: m.transactionID,
+      fromAccountID: p.fromAccountID,
+      toAccountID: p.toAccountID,
+      amount: p.amount,
+    }),
+  );
+}
+
+function refundTransferDueToFailedExternalCredit(
+  p: TransferProcess,
+  s: ProcessEventScope<TransferProcess>,
+  e: ThirdPartyAccountCreditFailed,
+) {
+  markTransferAsFailed(p, s, e);
+  refundInternalAccount(p, s, e);
+}
+
+function markTransferAsFailed(
+  p: TransferProcess,
+  s: ProcessEventScope<TransferProcess>,
+  e: ThirdPartyAccountCreditFailed,
+) {
+  const { data: m } = e;
+  s.executeCommand(
+    createCommand(CommandName.MarkTransferAsFailed, {
+      transactionID: m.transactionID,
+      fromAccountID: p.fromAccountID,
+      toAccountID: p.toAccountID,
+      amount: p.amount,
+    }),
+  );
+}
+
+function refundInternalAccount(
+  p: TransferProcess,
+  s: ProcessEventScope<TransferProcess>,
+  e: ThirdPartyAccountCreditFailed,
+) {
+  const { data: m } = e;
+  s.executeCommand(
+    createCommand(CommandName.CreditAccount, {
+      transactionID: m.transactionID,
+      accountID: p.fromAccountID,
+      transactionType: TransactionType.Transfer,
+      amount: p.amount,
+    }),
+  );
+}
+
+function debitAccountForTransfer(
+  p: TransferProcess,
+  s: ProcessDeadlineScope<TransferProcess>,
+  d: TransferReadyToProceed,
+) {
+  const { data: m } = d;
+  s.executeCommand(
+    createCommand(CommandName.DebitAccount, {
+      transactionID: m.transactionID,
+      accountID: p.fromAccountID,
+      transactionType: TransactionType.Transfer,
+      amount: p.amount,
+      scheduledTime: s.scheduledFor(),
+    }),
+  );
+}

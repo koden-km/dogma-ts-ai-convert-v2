@@ -12,13 +12,19 @@ import {
   UnexpectedMessageError,
 } from "@/dogma/index.ts";
 import {
+  AccountCredited,
+  AccountDebitDeclined,
+  AccountDebited,
   CommandName,
   createCommand,
+  DailyDebitLimitConsumed,
   dailyDebitLimitDate,
+  DailyDebitLimitExceeded,
   DebitFailureReason,
   type DomainEvent,
   EventName,
   TransactionType,
+  WithdrawalStarted,
 } from "../messages/index.ts";
 
 // WithdrawalProcessHandler manages the process of withdrawing funds from an
@@ -95,79 +101,122 @@ export const WithdrawalProcessHandler: ProcessMessageHandler<StatelessProcessRoo
       const m = e as DomainEvent;
       switch (m.name) {
         case EventName.WithdrawalStarted:
-          s.executeCommand(
-            createCommand(CommandName.DebitAccount, {
-              transactionID: m.data.transactionID,
-              accountID: m.data.accountID,
-              transactionType: TransactionType.Withdrawal,
-              amount: m.data.amount,
-              scheduledTime: m.data.scheduledTime,
-            }),
-          );
+          debitAccountForWithdrawal(s, m);
           return;
-
         case EventName.AccountDebited:
-          s.executeCommand(
-            createCommand(CommandName.ConsumeDailyDebitLimit, {
-              transactionID: m.data.transactionID,
-              accountID: m.data.accountID,
-              debitType: TransactionType.Withdrawal,
-              amount: m.data.amount,
-              date: dailyDebitLimitDate(m.data.scheduledTime),
-            }),
-          );
+          consumeDailyDebitLimit(s, m);
           return;
-
         case EventName.AccountDebitDeclined:
-          s.executeCommand(
-            createCommand(CommandName.DeclineWithdrawal, {
-              transactionID: m.data.transactionID,
-              accountID: m.data.accountID,
-              amount: m.data.amount,
-              reason: m.data.reason,
-            }),
-          );
+          declineWithdrawalDueToDeclinedDebit(s, m);
           return;
-
         case EventName.DailyDebitLimitConsumed:
-          s.executeCommand(
-            createCommand(CommandName.ApproveWithdrawal, {
-              transactionID: m.data.transactionID,
-              accountID: m.data.accountID,
-              amount: m.data.amount,
-            }),
-          );
+          approveWithdrawal(s, m);
           return;
-
         case EventName.DailyDebitLimitExceeded:
-          s.executeCommand(
-            createCommand(CommandName.CreditAccount, {
-              transactionID: m.data.transactionID,
-              accountID: m.data.accountID,
-              transactionType: TransactionType.Withdrawal,
-              amount: m.data.amount,
-            }),
-          );
+          refundAccountDueToExceedingDailyDebitLimit(s, m);
           return;
-
         case EventName.AccountCredited:
-          s.executeCommand(
-            createCommand(CommandName.DeclineWithdrawal, {
-              transactionID: m.data.transactionID,
-              accountID: m.data.accountID,
-              amount: m.data.amount,
-              reason: DebitFailureReason.DailyDebitLimitExceeded,
-            }),
-          );
+          declineWithdrawalDueToExceedingDailyLimit(s, m);
           return;
-
         case EventName.WithdrawalApproved:
         case EventName.WithdrawalDeclined:
           s.end();
           return;
-
         default:
           throw new UnexpectedMessageError();
       }
     },
   };
+
+function debitAccountForWithdrawal(
+  s: ProcessEventScope<StatelessProcessRoot>,
+  e: WithdrawalStarted,
+) {
+  const { data: m } = e;
+  s.executeCommand(
+    createCommand(CommandName.DebitAccount, {
+      transactionID: m.transactionID,
+      accountID: m.accountID,
+      transactionType: TransactionType.Withdrawal,
+      amount: m.amount,
+      scheduledTime: m.scheduledTime,
+    }),
+  );
+}
+
+function consumeDailyDebitLimit(
+  s: ProcessEventScope<StatelessProcessRoot>,
+  e: AccountDebited,
+) {
+  const { data: m } = e;
+  s.executeCommand(
+    createCommand(CommandName.ConsumeDailyDebitLimit, {
+      transactionID: m.transactionID,
+      accountID: m.accountID,
+      debitType: TransactionType.Withdrawal,
+      amount: m.amount,
+      date: dailyDebitLimitDate(m.scheduledTime),
+    }),
+  );
+}
+
+function declineWithdrawalDueToDeclinedDebit(
+  s: ProcessEventScope<StatelessProcessRoot>,
+  e: AccountDebitDeclined,
+) {
+  const { data: m } = e;
+  s.executeCommand(
+    createCommand(CommandName.DeclineWithdrawal, {
+      transactionID: m.transactionID,
+      accountID: m.accountID,
+      amount: m.amount,
+      reason: m.reason,
+    }),
+  );
+  return;
+}
+
+function approveWithdrawal(
+  s: ProcessEventScope<StatelessProcessRoot>,
+  e: DailyDebitLimitConsumed,
+) {
+  const { data: m } = e;
+  s.executeCommand(
+    createCommand(CommandName.ApproveWithdrawal, {
+      transactionID: m.transactionID,
+      accountID: m.accountID,
+      amount: m.amount,
+    }),
+  );
+}
+
+function refundAccountDueToExceedingDailyDebitLimit(
+  s: ProcessEventScope<StatelessProcessRoot>,
+  e: DailyDebitLimitExceeded,
+) {
+  const { data: m } = e;
+  s.executeCommand(
+    createCommand(CommandName.CreditAccount, {
+      transactionID: m.transactionID,
+      accountID: m.accountID,
+      transactionType: TransactionType.Withdrawal,
+      amount: m.amount,
+    }),
+  );
+  return;
+}
+
+function declineWithdrawalDueToExceedingDailyLimit(
+  s: ProcessEventScope<StatelessProcessRoot>,
+  e: AccountCredited,
+) {
+  const { data: m } = e;
+  s.executeCommand(
+    createCommand(CommandName.DeclineWithdrawal, {
+      transactionID: m.transactionID,
+      accountID: m.accountID,
+      amount: m.amount,
+      reason: DebitFailureReason.DailyDebitLimitExceeded,
+    }),
+  );
+}

@@ -76,21 +76,30 @@ export const CustomerHandler: AggregateMessageHandler<Customer> = {
     const m = c as DomainCommand;
     switch (m.name) {
       case CommandName.OpenAccountForNewCustomer:
-        if (r.name !== "") {
-          s.log("customer has already been acquired");
-          return;
-        }
-        s.recordEvent(
-          createEvent(EventName.CustomerAcquired, {
-            customerID: m.data.customerID,
-            customerName: m.data.customerName,
-            accountID: m.data.accountID,
-            accountName: m.data.accountName,
-          }),
-        );
+        acquireCustomer(r, s, m);
         return;
       default:
         throw new UnexpectedMessageError();
     }
   },
 };
+
+function acquireCustomer(
+  r: Customer,
+  s: AggregateCommandScope<Customer>,
+  c: OpenAccountForNewCustomer,
+) {
+  const { data: m } = c;
+  if (r.name !== "") {
+    s.log("customer has already been acquired");
+    return;
+  }
+  s.recordEvent(
+    createEvent(EventName.CustomerAcquired, {
+      customerID: m.customerID,
+      customerName: m.customerName,
+      accountID: m.accountID,
+      accountName: m.accountName,
+    }),
+  );
+}

@@ -12,8 +12,11 @@ import {
   UnexpectedMessageError,
 } from "@/dogma/index.ts";
 import {
+  AccountCredited,
   CommandName,
   createCommand,
+  CreditAccount,
+  DepositStarted,
   type DomainEvent,
   EventName,
   TransactionType,
@@ -64,32 +67,45 @@ export const DepositProcessHandler: ProcessMessageHandler<StatelessProcessRoot> 
       const m = e as DomainEvent;
       switch (m.name) {
         case EventName.DepositStarted:
-          s.executeCommand(
-            createCommand(CommandName.CreditAccount, {
-              transactionID: m.data.transactionID,
-              accountID: m.data.accountID,
-              transactionType: TransactionType.Deposit,
-              amount: m.data.amount,
-            }),
-          );
+          creditAccount(s, m);
           return;
-
         case EventName.AccountCredited:
-          s.executeCommand(
-            createCommand(CommandName.ApproveDeposit, {
-              transactionID: m.data.transactionID,
-              accountID: m.data.accountID,
-              amount: m.data.amount,
-            }),
-          );
+          approveDeposit(s, m);
           return;
-
         case EventName.DepositApproved:
           s.end();
           return;
-
         default:
           throw new UnexpectedMessageError();
       }
     },
   };
+
+function creditAccount(
+  s: ProcessEventScope<StatelessProcessRoot>,
+  e: DepositStarted,
+) {
+  const { data: m } = e;
+  s.executeCommand(
+    createCommand(CommandName.CreditAccount, {
+      transactionID: m.transactionID,
+      accountID: m.accountID,
+      transactionType: TransactionType.Deposit,
+      amount: m.amount,
+    }),
+  );
+}
+
+function approveDeposit(
+  s: ProcessEventScope<StatelessProcessRoot>,
+  e: AccountCredited,
+) {
+  const { data: m } = e;
+  s.executeCommand(
+    createCommand(CommandName.ApproveDeposit, {
+      transactionID: m.transactionID,
+      accountID: m.accountID,
+      amount: m.amount,
+    }),
+  );
+}

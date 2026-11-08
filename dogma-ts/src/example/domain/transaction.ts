@@ -11,12 +11,21 @@ import {
   UnexpectedMessageError,
 } from "@/dogma/index.ts";
 import {
+  ApproveDeposit,
+  ApproveTransfer,
+  ApproveWithdrawal,
   CommandName,
   createEvent,
+  DeclineTransfer,
+  DeclineWithdrawal,
+  Deposit,
   type DomainCommand,
   type DomainEvent,
   EventName,
   formatAmount,
+  MarkTransferAsFailed,
+  Transfer,
+  Withdraw,
 } from "../messages/index.ts";
 
 // Transaction is the aggregate root for a bank transaction.
@@ -140,122 +149,197 @@ export const TransactionHandler: AggregateMessageHandler<Transaction> = {
     const m = c as DomainCommand;
     switch (m.name) {
       case CommandName.Deposit:
-        if (r.status !== "") {
-          s.log("transaction already started");
-          return;
-        }
-        s.recordEvent(
-          createEvent(EventName.DepositStarted, {
-            transactionID: m.data.transactionID,
-            accountID: m.data.accountID,
-            amount: m.data.amount,
-          }),
-        );
+        startDeposit(r, s, m);
         return;
-
       case CommandName.ApproveDeposit:
-        s.recordEvent(
-          createEvent(EventName.DepositApproved, {
-            transactionID: m.data.transactionID,
-            accountID: m.data.accountID,
-            amount: m.data.amount,
-          }),
-        );
+        approveDeposit(r, s, m);
         return;
-
       case CommandName.Withdraw:
-        if (r.status !== "") {
-          s.log("transaction already started");
-          return;
-        }
-        s.recordEvent(
-          createEvent(EventName.WithdrawalStarted, {
-            transactionID: m.data.transactionID,
-            accountID: m.data.accountID,
-            amount: m.data.amount,
-            scheduledTime: m.data.scheduledTime,
-          }),
-        );
+        startWithdrawal(r, s, m);
         return;
-
       case CommandName.ApproveWithdrawal:
-        s.recordEvent(
-          createEvent(EventName.WithdrawalApproved, {
-            transactionID: m.data.transactionID,
-            accountID: m.data.accountID,
-            amount: m.data.amount,
-          }),
-        );
+        approveWithdrawal(r, s, m);
         return;
-
       case CommandName.DeclineWithdrawal:
-        s.recordEvent(
-          createEvent(EventName.WithdrawalDeclined, {
-            transactionID: m.data.transactionID,
-            accountID: m.data.accountID,
-            amount: m.data.amount,
-            reason: m.data.reason,
-          }),
-        );
+        declineWithdrawal(r, s, m);
         return;
-
       case CommandName.Transfer:
-        if (r.status !== "") {
-          s.log("transaction already started");
-          return;
-        }
-        if (m.data.fromAccountID === m.data.toAccountID) {
-          s.log("cannot transfer to same account");
-          return;
-        }
-        s.recordEvent(
-          createEvent(EventName.TransferStarted, {
-            transactionID: m.data.transactionID,
-            fromAccountID: m.data.fromAccountID,
-            toAccountID: m.data.toAccountID,
-            toThirdPartyBank: m.data.toThirdPartyBank,
-            amount: m.data.amount,
-            scheduledTime: m.data.scheduledTime,
-          }),
-        );
+        startTransfer(r, s, m);
         return;
-
       case CommandName.ApproveTransfer:
-        s.recordEvent(
-          createEvent(EventName.TransferApproved, {
-            transactionID: m.data.transactionID,
-            fromAccountID: m.data.fromAccountID,
-            toAccountID: m.data.toAccountID,
-            amount: m.data.amount,
-          }),
-        );
+        approveTransfer(r, s, m);
         return;
-
       case CommandName.DeclineTransfer:
-        s.recordEvent(
-          createEvent(EventName.TransferDeclined, {
-            transactionID: m.data.transactionID,
-            fromAccountID: m.data.fromAccountID,
-            toAccountID: m.data.toAccountID,
-            amount: m.data.amount,
-            reason: m.data.reason,
-          }),
-        );
+        declineTransfer(r, s, m);
         return;
-
       case CommandName.MarkTransferAsFailed:
-        s.recordEvent(
-          createEvent(EventName.TransferFailed, {
-            transactionID: m.data.transactionID,
-            fromAccountID: m.data.fromAccountID,
-            toAccountID: m.data.toAccountID,
-            amount: m.data.amount,
-          }),
-        );
+        failTransfer(r, s, m);
         return;
-
       default:
         throw new UnexpectedMessageError();
     }
   },
 };
+
+function startDeposit(
+  r: Transaction,
+  s: AggregateCommandScope<Transaction>,
+  c: Deposit,
+) {
+  const { data: m } = c;
+  if (r.status !== "") {
+    s.log("transaction already started");
+    return;
+  }
+  s.recordEvent(
+    createEvent(EventName.DepositStarted, {
+      transactionID: m.transactionID,
+      accountID: m.accountID,
+      amount: m.amount,
+    }),
+  );
+}
+
+function approveDeposit(
+  r: Transaction,
+  s: AggregateCommandScope<Transaction>,
+  c: ApproveDeposit,
+) {
+  const { data: m } = c;
+  s.recordEvent(
+    createEvent(EventName.DepositApproved, {
+      transactionID: m.transactionID,
+      accountID: m.accountID,
+      amount: m.amount,
+    }),
+  );
+}
+
+function startWithdrawal(
+  r: Transaction,
+  s: AggregateCommandScope<Transaction>,
+  c: Withdraw,
+) {
+  const { data: m } = c;
+  if (r.status !== "") {
+    s.log("transaction already started");
+    return;
+  }
+  s.recordEvent(
+    createEvent(EventName.WithdrawalStarted, {
+      transactionID: m.transactionID,
+      accountID: m.accountID,
+      amount: m.amount,
+      scheduledTime: m.scheduledTime,
+    }),
+  );
+}
+
+function approveWithdrawal(
+  r: Transaction,
+  s: AggregateCommandScope<Transaction>,
+  c: ApproveWithdrawal,
+) {
+  const { data: m } = c;
+  s.recordEvent(
+    createEvent(EventName.WithdrawalApproved, {
+      transactionID: m.transactionID,
+      accountID: m.accountID,
+      amount: m.amount,
+    }),
+  );
+}
+
+function declineWithdrawal(
+  r: Transaction,
+  s: AggregateCommandScope<Transaction>,
+  c: DeclineWithdrawal,
+) {
+  const { data: m } = c;
+  s.recordEvent(
+    createEvent(EventName.WithdrawalDeclined, {
+      transactionID: m.transactionID,
+      accountID: m.accountID,
+      amount: m.amount,
+      reason: m.reason,
+    }),
+  );
+  return;
+}
+
+function startTransfer(
+  r: Transaction,
+  s: AggregateCommandScope<Transaction>,
+  c: Transfer,
+) {
+  const { data: m } = c;
+  if (r.status !== "") {
+    s.log("transaction already started");
+    return;
+  }
+  if (m.fromAccountID === m.toAccountID) {
+    s.log("cannot transfer to same account");
+    return;
+  }
+  s.recordEvent(
+    createEvent(EventName.TransferStarted, {
+      transactionID: m.transactionID,
+      fromAccountID: m.fromAccountID,
+      toAccountID: m.toAccountID,
+      toThirdPartyBank: m.toThirdPartyBank,
+      amount: m.amount,
+      scheduledTime: m.scheduledTime,
+    }),
+  );
+}
+
+function approveTransfer(
+  r: Transaction,
+  s: AggregateCommandScope<Transaction>,
+  c: ApproveTransfer,
+) {
+  const { data: m } = c;
+  s.recordEvent(
+    createEvent(EventName.TransferApproved, {
+      transactionID: m.transactionID,
+      fromAccountID: m.fromAccountID,
+      toAccountID: m.toAccountID,
+      amount: m.amount,
+    }),
+  );
+  return;
+}
+
+function declineTransfer(
+  r: Transaction,
+  s: AggregateCommandScope<Transaction>,
+  c: DeclineTransfer,
+) {
+  const { data: m } = c;
+  s.recordEvent(
+    createEvent(EventName.TransferDeclined, {
+      transactionID: m.transactionID,
+      fromAccountID: m.fromAccountID,
+      toAccountID: m.toAccountID,
+      amount: m.amount,
+      reason: m.reason,
+    }),
+  );
+  return;
+}
+
+function failTransfer(
+  r: Transaction,
+  s: AggregateCommandScope<Transaction>,
+  c: MarkTransferAsFailed,
+) {
+  const { data: m } = c;
+  s.recordEvent(
+    createEvent(EventName.TransferFailed, {
+      transactionID: m.transactionID,
+      fromAccountID: m.fromAccountID,
+      toAccountID: m.toAccountID,
+      amount: m.amount,
+    }),
+  );
+}
