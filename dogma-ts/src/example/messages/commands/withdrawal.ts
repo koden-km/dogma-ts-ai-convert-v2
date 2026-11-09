@@ -5,33 +5,33 @@ import {
   isValidDebitFailureReason,
 } from "../transaction.ts";
 import {
-  type ApproveWithdrawal,
+  type ApproveWithdrawal as ApproveWithdrawalMessage,
   ApproveWithdrawalSchema,
-  type DeclineWithdrawal,
+  type DeclineWithdrawal as DeclineWithdrawalMessage,
   DeclineWithdrawalSchema,
-  type Withdraw,
+  type Withdraw as WithdrawMessage,
   WithdrawSchema,
 } from "./withdrawal_pb.ts";
 
-export {
-  type ApproveWithdrawal,
-  ApproveWithdrawalSchema,
-  type DeclineWithdrawal,
-  DeclineWithdrawalSchema,
-  type Withdraw,
-  WithdrawSchema,
-};
+export type Withdraw = WithdrawMessage;
+export const Withdraw = WithdrawSchema;
+
+export type ApproveWithdrawal = ApproveWithdrawalMessage;
+export const ApproveWithdrawal = ApproveWithdrawalSchema;
+
+export type DeclineWithdrawal = DeclineWithdrawalMessage;
+export const DeclineWithdrawal = DeclineWithdrawalSchema;
 
 export type DomainCommand = Withdraw | ApproveWithdrawal | DeclineWithdrawal;
 
-registerCommand(WithdrawSchema, "5528ea57-2fa4-4ddd-ac96-3ec56ec89fce", {
+registerCommand(Withdraw, "5528ea57-2fa4-4ddd-ac96-3ec56ec89fce", {
   validate: validateWithdraw,
   describe: describeWithdraw,
   allowIdempotent: true,
 });
 
 registerCommand(
-  ApproveWithdrawalSchema,
+  ApproveWithdrawal,
   "1023356f-f49c-4ea1-9244-83fdb3225da9",
   {
     validate: validateApproveWithdrawal,
@@ -41,7 +41,7 @@ registerCommand(
 );
 
 registerCommand(
-  DeclineWithdrawalSchema,
+  DeclineWithdrawal,
   "ee1e59ff-ed96-4d66-a1aa-f0a11ca8c47d",
   {
     validate: validateDeclineWithdrawal,

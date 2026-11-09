@@ -11,20 +11,17 @@ import {
   UnexpectedMessageError,
 } from "@/dogma/index.ts";
 import {
-  AccountCreditedSchema,
-  AccountDebitDeclinedSchema,
-  AccountDebitedSchema,
-  AccountOpenedSchema,
-  type CreditAccount,
-  CreditAccountSchema,
-  type DebitAccount,
-  DebitAccountSchema,
+  AccountCredited,
+  AccountDebitDeclined,
+  AccountDebited,
+  AccountOpened,
+  CreditAccount,
+  DebitAccount,
   DebitFailureReason,
   type DomainCommand,
   type DomainEvent,
   formatAmount,
-  type OpenAccount,
-  OpenAccountSchema,
+  OpenAccount,
 } from "../messages/index.ts";
 
 // Account is the aggregate root for a bank account.
@@ -45,13 +42,13 @@ export const AccountHandler: AggregateMessageHandler<Account> = {
     c.identity("account", "fcce9a78-23a3-4211-b608-ecbe21ea446f");
 
     c.routes(
-      handlesCommand(OpenAccountSchema),
-      handlesCommand(CreditAccountSchema),
-      handlesCommand(DebitAccountSchema),
-      recordsEvent(AccountOpenedSchema),
-      recordsEvent(AccountCreditedSchema),
-      recordsEvent(AccountDebitedSchema),
-      recordsEvent(AccountDebitDeclinedSchema),
+      handlesCommand(OpenAccount),
+      handlesCommand(CreditAccount),
+      handlesCommand(DebitAccount),
+      recordsEvent(AccountOpened),
+      recordsEvent(AccountCredited),
+      recordsEvent(AccountDebited),
+      recordsEvent(AccountDebitDeclined),
     );
   },
 
@@ -72,13 +69,13 @@ export const AccountHandler: AggregateMessageHandler<Account> = {
   applyEvent(r: Account, e: Event): void {
     const m = e as DomainEvent;
     switch (m.$typeName) {
-      case AccountOpenedSchema.typeName:
+      case AccountOpened.typeName:
         r.name = m.accountName;
         break;
-      case AccountCreditedSchema.typeName:
+      case AccountCredited.typeName:
         r.balance += m.amount;
         break;
-      case AccountDebitedSchema.typeName:
+      case AccountDebited.typeName:
         r.balance -= m.amount;
         break;
     }
@@ -102,11 +99,11 @@ export const AccountHandler: AggregateMessageHandler<Account> = {
   routeCommandToInstance(c: Command): string {
     const m = c as DomainCommand;
     switch (m.$typeName) {
-      case OpenAccountSchema.typeName:
+      case OpenAccount.typeName:
         return m.accountId;
-      case CreditAccountSchema.typeName:
+      case CreditAccount.typeName:
         return m.accountId;
-      case DebitAccountSchema.typeName:
+      case DebitAccount.typeName:
         return m.accountId;
       default:
         throw new UnexpectedMessageError();
@@ -120,11 +117,11 @@ export const AccountHandler: AggregateMessageHandler<Account> = {
   ): void {
     const m = c as DomainCommand;
     switch (m.$typeName) {
-      case OpenAccountSchema.typeName:
+      case OpenAccount.typeName:
         return openAccount(r, s, m);
-      case CreditAccountSchema.typeName:
+      case CreditAccount.typeName:
         return creditAccount(r, s, m);
-      case DebitAccountSchema.typeName:
+      case DebitAccount.typeName:
         return debitAccount(r, s, m);
       default:
         throw new UnexpectedMessageError();
@@ -143,7 +140,7 @@ function openAccount(
   }
 
   s.recordEvent(
-    create(AccountOpenedSchema, {
+    create(AccountOpened, {
       customerId: m.customerId,
       accountId: m.accountId,
       accountName: m.accountName,
@@ -157,7 +154,7 @@ function creditAccount(
   m: CreditAccount,
 ) {
   s.recordEvent(
-    create(AccountCreditedSchema, {
+    create(AccountCredited, {
       transactionId: m.transactionId,
       accountId: m.accountId,
       transactionType: m.transactionType,
@@ -173,7 +170,7 @@ function debitAccount(
 ) {
   if (hasSufficientFunds(r, m.amount)) {
     s.recordEvent(
-      create(AccountDebitedSchema, {
+      create(AccountDebited, {
         transactionId: m.transactionId,
         accountId: m.accountId,
         transactionType: m.transactionType,
@@ -183,7 +180,7 @@ function debitAccount(
     );
   } else {
     s.recordEvent(
-      create(AccountDebitDeclinedSchema, {
+      create(AccountDebitDeclined, {
         transactionId: m.transactionId,
         accountId: m.accountId,
         transactionType: m.transactionType,

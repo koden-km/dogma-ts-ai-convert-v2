@@ -7,23 +7,22 @@ import {
   isValidTransactionType,
 } from "../transaction.ts";
 import {
-  type DailyDebitLimitConsumed,
+  type DailyDebitLimitConsumed as DailyDebitLimitConsumedMessage,
   DailyDebitLimitConsumedSchema,
-  type DailyDebitLimitExceeded,
+  type DailyDebitLimitExceeded as DailyDebitLimitExceededMessage,
   DailyDebitLimitExceededSchema,
 } from "./dailydebitlimit_pb.ts";
 
-export {
-  type DailyDebitLimitConsumed,
-  DailyDebitLimitConsumedSchema,
-  type DailyDebitLimitExceeded,
-  DailyDebitLimitExceededSchema,
-};
+export type DailyDebitLimitConsumed = DailyDebitLimitConsumedMessage;
+export const DailyDebitLimitConsumed = DailyDebitLimitConsumedSchema;
+
+export type DailyDebitLimitExceeded = DailyDebitLimitExceededMessage;
+export const DailyDebitLimitExceeded = DailyDebitLimitExceededSchema;
 
 export type DomainEvent = DailyDebitLimitConsumed | DailyDebitLimitExceeded;
 
 registerEvent(
-  DailyDebitLimitConsumedSchema,
+  DailyDebitLimitConsumed,
   "9b4a1114-817e-42d1-963d-ba6324dd07b2",
   {
     validate: validateDailyDebitLimitConsumed,
@@ -33,7 +32,7 @@ registerEvent(
 );
 
 registerEvent(
-  DailyDebitLimitExceededSchema,
+  DailyDebitLimitExceeded,
   "83c5315e-440d-4d70-a6c8-41f97edc226f",
   {
     validate: validateDailyDebitLimitExceeded,

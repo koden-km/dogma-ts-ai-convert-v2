@@ -10,19 +10,19 @@ import {
   withEventObserver,
 } from "@/dogma/index.ts";
 import {
-  DepositApprovedSchema,
-  DepositSchema,
+  Deposit,
+  DepositApproved,
   formatAmount,
   formatDebitFailureReason,
-  OpenAccountForNewCustomerSchema,
-  OpenAccountSchema,
-  TransferApprovedSchema,
-  TransferDeclinedSchema,
-  TransferFailedSchema,
-  TransferSchema,
-  WithdrawalApprovedSchema,
-  WithdrawalDeclinedSchema,
-  WithdrawSchema,
+  OpenAccount,
+  OpenAccountForNewCustomer,
+  Transfer,
+  TransferApproved,
+  TransferDeclined,
+  TransferFailed,
+  Withdraw,
+  WithdrawalApproved,
+  WithdrawalDeclined,
 } from "@/example/messages/index.ts";
 
 export type UIHandlerConfig = {
@@ -1256,7 +1256,7 @@ ${errHtml}
 
         await commandExecutor.executeCommand(
           backgroundContext(),
-          create(OpenAccountForNewCustomerSchema, {
+          create(OpenAccountForNewCustomer, {
             customerId: customerID,
             customerName,
             accountId: accountID,
@@ -1324,7 +1324,7 @@ ${errHtml}
           const accountID = generateAccountID();
           await commandExecutor.executeCommand(
             backgroundContext(),
-            create(OpenAccountSchema, {
+            create(OpenAccount, {
               customerId: customerID,
               accountId: accountID,
               accountName,
@@ -1433,12 +1433,12 @@ ${errHtml}
             try {
               await commandExecutor.executeCommand(
                 backgroundContext(),
-                create(DepositSchema, {
+                create(Deposit, {
                   transactionId: randomUUID(),
                   accountId: accountID,
                   amount,
                 }),
-                withEventObserver(DepositApprovedSchema, () => true),
+                withEventObserver(DepositApproved, () => true),
               );
             } catch (err) {
               if (!(err instanceof EventObserverNotSatisfiedError)) {
@@ -1469,14 +1469,14 @@ ${errHtml}
             try {
               await commandExecutor.executeCommand(
                 backgroundContext(),
-                create(WithdrawSchema, {
+                create(Withdraw, {
                   transactionId: randomUUID(),
                   accountId: accountID,
                   amount,
                   scheduledTime: scheduledTime.toISOString(),
                 }),
-                withEventObserver(WithdrawalApprovedSchema, () => true),
-                withEventObserver(WithdrawalDeclinedSchema, (_ctx, e) => {
+                withEventObserver(WithdrawalApproved, () => true),
+                withEventObserver(WithdrawalDeclined, (_ctx, e) => {
                   formError = `Withdrawal declined — ${formatDebitFailureReason(e.reason)}.`;
                   return true;
                 }),
@@ -1531,7 +1531,7 @@ ${errHtml}
             try {
               await commandExecutor.executeCommand(
                 backgroundContext(),
-                create(TransferSchema, {
+                create(Transfer, {
                   transactionId: randomUUID(),
                   fromAccountId: accountID,
                   toAccountId: toAccountID,
@@ -1539,12 +1539,12 @@ ${errHtml}
                   toThirdPartyBank: false,
                   scheduledTime: scheduledTime.toISOString(),
                 }),
-                withEventObserver(TransferApprovedSchema, () => true),
-                withEventObserver(TransferDeclinedSchema, (_ctx, e) => {
+                withEventObserver(TransferApproved, () => true),
+                withEventObserver(TransferDeclined, (_ctx, e) => {
                   formError = `Transfer declined — ${formatDebitFailureReason(e.reason)}.`;
                   return true;
                 }),
-                withEventObserver(TransferFailedSchema, () => {
+                withEventObserver(TransferFailed, () => {
                   formError = "Transfer failed.";
                   return true;
                 }),

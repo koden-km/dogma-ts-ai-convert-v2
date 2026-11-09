@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { create } from "@/dogma/index.ts";
 import { newApp } from "@/example/app.ts";
-import { OpenAccountForNewCustomerSchema } from "@/example/messages/index.ts";
+import { OpenAccountForNewCustomer } from "@/example/messages/index.ts";
 import { mustNewDB } from "@/example/ui/projections/index.ts";
 import { begin, executeCommand } from "@/testkit/index.ts";
 
@@ -13,7 +13,7 @@ describe("CustomerProjectionHandler", () => {
         .enableHandlers("customers")
         .prepare(
           executeCommand(
-            create(OpenAccountForNewCustomerSchema, {
+            create(OpenAccountForNewCustomer, {
               customerId: "C001",
               customerName: "Anna Smith",
               accountId: "A001",

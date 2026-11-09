@@ -7,26 +7,27 @@ import {
   isValidTransactionType,
 } from "../transaction.ts";
 import {
-  type AccountCredited,
+  type AccountCredited as AccountCreditedMessage,
   AccountCreditedSchema,
-  type AccountDebitDeclined,
+  type AccountDebitDeclined as AccountDebitDeclinedMessage,
   AccountDebitDeclinedSchema,
-  type AccountDebited,
+  type AccountDebited as AccountDebitedMessage,
   AccountDebitedSchema,
-  type AccountOpened,
+  type AccountOpened as AccountOpenedMessage,
   AccountOpenedSchema,
 } from "./account_pb.ts";
 
-export {
-  type AccountCredited,
-  AccountCreditedSchema,
-  type AccountDebitDeclined,
-  AccountDebitDeclinedSchema,
-  type AccountDebited,
-  AccountDebitedSchema,
-  type AccountOpened,
-  AccountOpenedSchema,
-};
+export type AccountOpened = AccountOpenedMessage;
+export const AccountOpened = AccountOpenedSchema;
+
+export type AccountCredited = AccountCreditedMessage;
+export const AccountCredited = AccountCreditedSchema;
+
+export type AccountDebited = AccountDebitedMessage;
+export const AccountDebited = AccountDebitedSchema;
+
+export type AccountDebitDeclined = AccountDebitDeclinedMessage;
+export const AccountDebitDeclined = AccountDebitDeclinedSchema;
 
 export type DomainEvent =
   | AccountOpened
@@ -34,26 +35,26 @@ export type DomainEvent =
   | AccountDebited
   | AccountDebitDeclined;
 
-registerEvent(AccountOpenedSchema, "75ef425c-3c42-4ead-8925-cd26cbea3139", {
+registerEvent(AccountOpened, "75ef425c-3c42-4ead-8925-cd26cbea3139", {
   validate: validateAccountOpened,
   describe: describeAccountOpened,
   allowIdempotent: true,
 });
 
-registerEvent(AccountCreditedSchema, "f3091f46-7d36-4e5f-b0ab-fb96029e5d7a", {
+registerEvent(AccountCredited, "f3091f46-7d36-4e5f-b0ab-fb96029e5d7a", {
   validate: validateAccountCredited,
   describe: describeAccountCredited,
   allowIdempotent: true,
 });
 
-registerEvent(AccountDebitedSchema, "76552351-0095-442e-85dd-68f8f7fae286", {
+registerEvent(AccountDebited, "76552351-0095-442e-85dd-68f8f7fae286", {
   validate: validateAccountDebited,
   describe: describeAccountDebited,
   allowIdempotent: true,
 });
 
 registerEvent(
-  AccountDebitDeclinedSchema,
+  AccountDebitDeclined,
   "34b0c426-5467-44d8-a5db-7d09c789c930",
   {
     validate: validateAccountDebitDeclined,

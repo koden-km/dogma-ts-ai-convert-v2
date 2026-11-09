@@ -2,8 +2,8 @@ import { describe, it } from "vitest";
 import { create } from "@/dogma/index.ts";
 import { newApp } from "@/example/app.ts";
 import {
-  CustomerAcquiredSchema,
-  OpenAccountForNewCustomerSchema,
+  CustomerAcquired,
+  OpenAccountForNewCustomer,
 } from "@/example/messages/index.ts";
 import {
   begin,
@@ -18,7 +18,7 @@ describe("OpenAccountForNewCustomer", () => {
     it("it acquires the customer", () => {
       begin(newApp()).expect(
         executeCommand(
-          create(OpenAccountForNewCustomerSchema, {
+          create(OpenAccountForNewCustomer, {
             customerId: "C001",
             customerName: "Bob Jones",
             accountId: "A001",
@@ -26,7 +26,7 @@ describe("OpenAccountForNewCustomer", () => {
           }),
         ),
         toRecordEvent(
-          create(CustomerAcquiredSchema, {
+          create(CustomerAcquired, {
             customerId: "C001",
             customerName: "Bob Jones",
             accountId: "A001",
@@ -39,7 +39,7 @@ describe("OpenAccountForNewCustomer", () => {
 
   describe("when the customer already exists", () => {
     it("it does not reacquire the customer", () => {
-      const cmd = create(OpenAccountForNewCustomerSchema, {
+      const cmd = create(OpenAccountForNewCustomer, {
         customerId: "C001",
         customerName: "Bob Jones",
         accountId: "A001",
@@ -50,7 +50,7 @@ describe("OpenAccountForNewCustomer", () => {
         .prepare(executeCommand(cmd))
         .expect(
           executeCommand(cmd),
-          noneOf(toRecordEventOfType(CustomerAcquiredSchema)),
+          noneOf(toRecordEventOfType(CustomerAcquired)),
         );
     });
   });

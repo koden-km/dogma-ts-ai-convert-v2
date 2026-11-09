@@ -13,11 +13,11 @@ import {
   UnexpectedMessageError,
 } from "@/dogma/index.ts";
 import {
-  AccountCreditedSchema,
-  ApproveDepositSchema,
-  CreditAccountSchema,
-  DepositApprovedSchema,
-  DepositStartedSchema,
+  AccountCredited,
+  ApproveDeposit,
+  CreditAccount,
+  DepositApproved,
+  DepositStarted,
   type DomainEvent,
   TransactionType,
 } from "../messages/index.ts";
@@ -33,25 +33,25 @@ export const DepositProcessHandler: ProcessMessageHandler<StatelessProcessRoot> 
       c.identity("deposit", "4e50b66b-b2c4-4522-bf15-39756186caee");
 
       c.routes(
-        handlesEvent(DepositStartedSchema),
-        handlesEvent(AccountCreditedSchema),
-        handlesEvent(DepositApprovedSchema),
-        executesCommand(CreditAccountSchema),
-        executesCommand(ApproveDepositSchema),
+        handlesEvent(DepositStarted),
+        handlesEvent(AccountCredited),
+        handlesEvent(DepositApproved),
+        executesCommand(CreditAccount),
+        executesCommand(ApproveDeposit),
       );
     },
 
     routeEventToInstance(_ctx: Context, e: Event): [string, boolean] {
       const m = e as DomainEvent;
       switch (m.$typeName) {
-        case DepositStartedSchema.typeName:
+        case DepositStarted.typeName:
           return [m.transactionId, true];
-        case AccountCreditedSchema.typeName:
+        case AccountCredited.typeName:
           return [
             m.transactionId,
             m.transactionType === TransactionType.DEPOSIT,
           ];
-        case DepositApprovedSchema.typeName:
+        case DepositApproved.typeName:
           return [m.transactionId, true];
         default:
           throw new UnexpectedMessageError();
@@ -66,9 +66,9 @@ export const DepositProcessHandler: ProcessMessageHandler<StatelessProcessRoot> 
     ): void {
       const m = e as DomainEvent;
       switch (m.$typeName) {
-        case DepositStartedSchema.typeName:
+        case DepositStarted.typeName:
           s.executeCommand(
-            create(CreditAccountSchema, {
+            create(CreditAccount, {
               transactionId: m.transactionId,
               accountId: m.accountId,
               transactionType: TransactionType.DEPOSIT,
@@ -77,9 +77,9 @@ export const DepositProcessHandler: ProcessMessageHandler<StatelessProcessRoot> 
           );
           return;
 
-        case AccountCreditedSchema.typeName:
+        case AccountCredited.typeName:
           s.executeCommand(
-            create(ApproveDepositSchema, {
+            create(ApproveDeposit, {
               transactionId: m.transactionId,
               accountId: m.accountId,
               amount: m.amount,
@@ -87,7 +87,7 @@ export const DepositProcessHandler: ProcessMessageHandler<StatelessProcessRoot> 
           );
           return;
 
-        case DepositApprovedSchema.typeName:
+        case DepositApproved.typeName:
           s.end();
           return;
 

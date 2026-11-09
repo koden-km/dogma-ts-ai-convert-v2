@@ -4,26 +4,27 @@ import {
   isValidTransactionType,
 } from "../transaction.ts";
 import {
-  type CreditAccount,
+  type CreditAccount as CreditAccountMessage,
   CreditAccountSchema,
-  type DebitAccount,
+  type DebitAccount as DebitAccountMessage,
   DebitAccountSchema,
-  type OpenAccount,
-  type OpenAccountForNewCustomer,
+  type OpenAccountForNewCustomer as OpenAccountForNewCustomerMessage,
   OpenAccountForNewCustomerSchema,
+  type OpenAccount as OpenAccountMessage,
   OpenAccountSchema,
 } from "./account_pb.ts";
 
-export {
-  type CreditAccount,
-  CreditAccountSchema,
-  type DebitAccount,
-  DebitAccountSchema,
-  type OpenAccount,
-  type OpenAccountForNewCustomer,
-  OpenAccountForNewCustomerSchema,
-  OpenAccountSchema,
-};
+export type OpenAccountForNewCustomer = OpenAccountForNewCustomerMessage;
+export const OpenAccountForNewCustomer = OpenAccountForNewCustomerSchema;
+
+export type OpenAccount = OpenAccountMessage;
+export const OpenAccount = OpenAccountSchema;
+
+export type CreditAccount = CreditAccountMessage;
+export const CreditAccount = CreditAccountSchema;
+
+export type DebitAccount = DebitAccountMessage;
+export const DebitAccount = DebitAccountSchema;
 
 export type DomainCommand =
   | OpenAccountForNewCustomer
@@ -32,7 +33,7 @@ export type DomainCommand =
   | DebitAccount;
 
 registerCommand(
-  OpenAccountForNewCustomerSchema,
+  OpenAccountForNewCustomer,
   "209ed1ad-4394-4c1a-b36f-7b24fc8b1d1b",
   {
     validate: validateOpenAccountForNewCustomer,
@@ -41,19 +42,19 @@ registerCommand(
   },
 );
 
-registerCommand(OpenAccountSchema, "3d20299c-ba57-4756-8692-f4e3a95fe00d", {
+registerCommand(OpenAccount, "3d20299c-ba57-4756-8692-f4e3a95fe00d", {
   validate: validateOpenAccount,
   describe: describeOpenAccount,
   allowIdempotent: true,
 });
 
-registerCommand(CreditAccountSchema, "0ffb0a54-eaf5-459c-a58b-76f22b95de2d", {
+registerCommand(CreditAccount, "0ffb0a54-eaf5-459c-a58b-76f22b95de2d", {
   validate: validateCreditAccount,
   describe: describeCreditAccount,
   allowIdempotent: true,
 });
 
-registerCommand(DebitAccountSchema, "4209ab99-5f15-45b9-a88f-48bce219b911", {
+registerCommand(DebitAccount, "4209ab99-5f15-45b9-a88f-48bce219b911", {
   validate: validateDebitAccount,
   describe: describeDebitAccount,
   allowIdempotent: true,

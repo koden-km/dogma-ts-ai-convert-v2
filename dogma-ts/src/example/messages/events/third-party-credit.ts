@@ -1,25 +1,26 @@
 import { InvalidMessageError, registerEvent } from "@/dogma/message.ts";
 import { formatAmount } from "../format.ts";
 import {
-  type ThirdPartyAccountCredited,
+  type ThirdPartyAccountCredited as ThirdPartyAccountCreditedMessage,
   ThirdPartyAccountCreditedSchema,
-  type ThirdPartyAccountCreditFailed,
+  type ThirdPartyAccountCreditFailed as ThirdPartyAccountCreditFailedMessage,
   ThirdPartyAccountCreditFailedSchema,
 } from "./third-party-credit_pb.ts";
 
-export {
-  type ThirdPartyAccountCredited,
-  ThirdPartyAccountCreditedSchema,
-  type ThirdPartyAccountCreditFailed,
-  ThirdPartyAccountCreditFailedSchema,
-};
+export type ThirdPartyAccountCredited = ThirdPartyAccountCreditedMessage;
+export const ThirdPartyAccountCredited = ThirdPartyAccountCreditedSchema;
+
+export type ThirdPartyAccountCreditFailed =
+  ThirdPartyAccountCreditFailedMessage;
+export const ThirdPartyAccountCreditFailed =
+  ThirdPartyAccountCreditFailedSchema;
 
 export type DomainEvent =
   | ThirdPartyAccountCredited
   | ThirdPartyAccountCreditFailed;
 
 registerEvent(
-  ThirdPartyAccountCreditedSchema,
+  ThirdPartyAccountCredited,
   "a7f3c8e2-5d1b-4a9e-8c6f-3b2d0e7a1c5d",
   {
     validate: validateThirdPartyAccountCredited,
@@ -29,7 +30,7 @@ registerEvent(
 );
 
 registerEvent(
-  ThirdPartyAccountCreditFailedSchema,
+  ThirdPartyAccountCreditFailed,
   "e9b4d7f0-2c6a-4e8b-9d3f-1a5c0b8e4d2a",
   {
     validate: validateThirdPartyAccountCreditFailed,

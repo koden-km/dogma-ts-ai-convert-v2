@@ -1,16 +1,17 @@
 import { InvalidMessageError, registerCommand } from "@/dogma/message.ts";
 import { formatAmount } from "../format.ts";
 import {
-  type CreditThirdPartyAccount,
+  type CreditThirdPartyAccount as CreditThirdPartyAccountMessage,
   CreditThirdPartyAccountSchema,
 } from "./third-party-credit_pb.ts";
 
-export { type CreditThirdPartyAccount, CreditThirdPartyAccountSchema };
+export type CreditThirdPartyAccount = CreditThirdPartyAccountMessage;
+export const CreditThirdPartyAccount = CreditThirdPartyAccountSchema;
 
 export type DomainCommand = CreditThirdPartyAccount;
 
 registerCommand(
-  CreditThirdPartyAccountSchema,
+  CreditThirdPartyAccount,
   "c4a2e6f1-8b3d-4e7a-9f5c-2d1b0e8a3c6f",
   {
     validate: validateCreditThirdPartyAccount,

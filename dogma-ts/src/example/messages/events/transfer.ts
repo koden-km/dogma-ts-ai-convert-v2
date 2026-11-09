@@ -5,26 +5,27 @@ import {
   isValidDebitFailureReason,
 } from "../transaction.ts";
 import {
-  type TransferApproved,
+  type TransferApproved as TransferApprovedMessage,
   TransferApprovedSchema,
-  type TransferDeclined,
+  type TransferDeclined as TransferDeclinedMessage,
   TransferDeclinedSchema,
-  type TransferFailed,
+  type TransferFailed as TransferFailedMessage,
   TransferFailedSchema,
-  type TransferStarted,
+  type TransferStarted as TransferStartedMessage,
   TransferStartedSchema,
 } from "./transfer_pb.ts";
 
-export {
-  type TransferApproved,
-  TransferApprovedSchema,
-  type TransferDeclined,
-  TransferDeclinedSchema,
-  type TransferFailed,
-  TransferFailedSchema,
-  type TransferStarted,
-  TransferStartedSchema,
-};
+export type TransferStarted = TransferStartedMessage;
+export const TransferStarted = TransferStartedSchema;
+
+export type TransferApproved = TransferApprovedMessage;
+export const TransferApproved = TransferApprovedSchema;
+
+export type TransferDeclined = TransferDeclinedMessage;
+export const TransferDeclined = TransferDeclinedSchema;
+
+export type TransferFailed = TransferFailedMessage;
+export const TransferFailed = TransferFailedSchema;
 
 export type DomainEvent =
   | TransferStarted
@@ -32,14 +33,14 @@ export type DomainEvent =
   | TransferDeclined
   | TransferFailed;
 
-registerEvent(TransferStartedSchema, "e5a7db39-861a-4a98-b109-a6f4187ac407", {
+registerEvent(TransferStarted, "e5a7db39-861a-4a98-b109-a6f4187ac407", {
   validate: validateTransferStarted,
   describe: describeTransferStarted,
   allowIdempotent: true,
 });
 
 registerEvent(
-  TransferApprovedSchema,
+  TransferApproved,
   "bcc989cc-4ec7-4175-84dc-24908ac82676",
   {
     validate: validateTransferApproved,
@@ -49,7 +50,7 @@ registerEvent(
 );
 
 registerEvent(
-  TransferDeclinedSchema,
+  TransferDeclined,
   "0e43679a-bf5b-4730-a4a0-543e17a67479",
   {
     validate: validateTransferDeclined,
@@ -58,7 +59,7 @@ registerEvent(
   },
 );
 
-registerEvent(TransferFailedSchema, "c6d8e9a1-2b4f-5e7c-8d0a-1f3e5c7b9d2e", {
+registerEvent(TransferFailed, "c6d8e9a1-2b4f-5e7c-8d0a-1f3e5c7b9d2e", {
   validate: validateTransferFailed,
   describe: describeTransferFailed,
   allowIdempotent: true,

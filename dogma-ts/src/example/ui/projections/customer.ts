@@ -9,7 +9,7 @@ import {
   UnexpectedMessageError,
 } from "@/dogma/index.ts";
 import {
-  CustomerAcquiredSchema,
+  CustomerAcquired,
   type DomainEvent,
 } from "@/example/messages/index.ts";
 import {
@@ -29,7 +29,7 @@ export const CustomerProjectionHandler: MessageHandler = {
   configure(c: ProjectionConfigurer): void {
     c.identity("customers", "70b58269-931a-46d6-b745-286a670fb6f7");
 
-    c.routes(handlesEvent(CustomerAcquiredSchema));
+    c.routes(handlesEvent(CustomerAcquired));
   },
 
   handleEvent(
@@ -41,7 +41,7 @@ export const CustomerProjectionHandler: MessageHandler = {
     const e = m as DomainEvent;
 
     switch (e.$typeName) {
-      case CustomerAcquiredSchema.typeName: {
+      case CustomerAcquired.typeName: {
         const stmt = tx.prepare(`
           INSERT INTO customers (
             id,

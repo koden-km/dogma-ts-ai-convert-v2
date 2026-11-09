@@ -12,9 +12,9 @@ import {
   UnexpectedMessageError,
 } from "@/dogma/index.ts";
 import {
-  ConsumeDailyDebitLimitSchema,
-  DailyDebitLimitConsumedSchema,
-  DailyDebitLimitExceededSchema,
+  ConsumeDailyDebitLimit,
+  DailyDebitLimitConsumed,
+  DailyDebitLimitExceeded,
   type DomainCommand,
   type DomainEvent,
   formatAmount,
@@ -43,9 +43,9 @@ export const DailyDebitLimitHandler: AggregateMessageHandler<DailyDebitLimit> =
       c.identity("daily-debit-limit", "238c5a7b-b51d-42d8-ac8d-a8c81b780230");
 
       c.routes(
-        handlesCommand(ConsumeDailyDebitLimitSchema),
-        recordsEvent(DailyDebitLimitConsumedSchema),
-        recordsEvent(DailyDebitLimitExceededSchema),
+        handlesCommand(ConsumeDailyDebitLimit),
+        recordsEvent(DailyDebitLimitConsumed),
+        recordsEvent(DailyDebitLimitExceeded),
       );
     },
 
@@ -62,7 +62,7 @@ export const DailyDebitLimitHandler: AggregateMessageHandler<DailyDebitLimit> =
     applyEvent(r: DailyDebitLimit, e: Event): void {
       const m = e as DomainEvent;
       switch (m.$typeName) {
-        case DailyDebitLimitConsumedSchema.typeName:
+        case DailyDebitLimitConsumed.typeName:
           r.totalDebitsForDay = m.totalDebitsForDay;
           break;
       }
@@ -71,7 +71,7 @@ export const DailyDebitLimitHandler: AggregateMessageHandler<DailyDebitLimit> =
     routeCommandToInstance(c: Command): string {
       const m = c as DomainCommand;
       switch (m.$typeName) {
-        case ConsumeDailyDebitLimitSchema.typeName:
+        case ConsumeDailyDebitLimit.typeName:
           return `${m.date}:${m.accountId}`;
         default:
           throw new UnexpectedMessageError();
@@ -85,10 +85,10 @@ export const DailyDebitLimitHandler: AggregateMessageHandler<DailyDebitLimit> =
     ): void {
       const m = c as DomainCommand;
       switch (m.$typeName) {
-        case ConsumeDailyDebitLimitSchema.typeName:
+        case ConsumeDailyDebitLimit.typeName:
           if (r.totalDebitsForDay + m.amount > maximumDailyDebitLimit) {
             s.recordEvent(
-              create(DailyDebitLimitExceededSchema, {
+              create(DailyDebitLimitExceeded, {
                 transactionId: m.transactionId,
                 accountId: m.accountId,
                 debitType: m.debitType,
@@ -100,7 +100,7 @@ export const DailyDebitLimitHandler: AggregateMessageHandler<DailyDebitLimit> =
             );
           } else {
             s.recordEvent(
-              create(DailyDebitLimitConsumedSchema, {
+              create(DailyDebitLimitConsumed, {
                 transactionId: m.transactionId,
                 accountId: m.accountId,
                 debitType: m.debitType,

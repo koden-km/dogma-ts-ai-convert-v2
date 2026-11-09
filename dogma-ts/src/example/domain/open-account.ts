@@ -13,9 +13,9 @@ import {
   UnexpectedMessageError,
 } from "@/dogma/index.ts";
 import {
-  CustomerAcquiredSchema,
+  CustomerAcquired,
   type DomainEvent,
-  OpenAccountSchema,
+  OpenAccount,
 } from "../messages/index.ts";
 
 // OpenAccountForNewCustomerProcessHandler manages the process of opening the
@@ -32,15 +32,15 @@ export const OpenAccountForNewCustomerProcessHandler: ProcessMessageHandler<Stat
       );
 
       c.routes(
-        handlesEvent(CustomerAcquiredSchema),
-        executesCommand(OpenAccountSchema),
+        handlesEvent(CustomerAcquired),
+        executesCommand(OpenAccount),
       );
     },
 
     routeEventToInstance(_ctx: Context, e: Event): [string, boolean] {
       const m = e as DomainEvent;
       switch (m.$typeName) {
-        case CustomerAcquiredSchema.typeName:
+        case CustomerAcquired.typeName:
           return [m.customerId, true];
         default:
           throw new UnexpectedMessageError();
@@ -55,9 +55,9 @@ export const OpenAccountForNewCustomerProcessHandler: ProcessMessageHandler<Stat
     ): void {
       const m = e as DomainEvent;
       switch (m.$typeName) {
-        case CustomerAcquiredSchema.typeName:
+        case CustomerAcquired.typeName:
           s.executeCommand(
-            create(OpenAccountSchema, {
+            create(OpenAccount, {
               customerId: m.customerId,
               accountId: m.accountId,
               accountName: m.accountName,

@@ -9,11 +9,11 @@ import {
   UnexpectedMessageError,
 } from "@/dogma/index.ts";
 import {
-  CreditThirdPartyAccountSchema,
+  CreditThirdPartyAccount,
   type DomainCommand,
   formatAmount,
-  ThirdPartyAccountCreditedSchema,
-  ThirdPartyAccountCreditFailedSchema,
+  ThirdPartyAccountCredited,
+  ThirdPartyAccountCreditFailed,
 } from "@/example/messages/index.ts";
 
 // ThirdPartyBankIntegrationHandler handles commands that interact with
@@ -23,9 +23,9 @@ export const ThirdPartyBankIntegrationHandler: IntegrationMessageHandler = {
     c.identity("third-party-bank", "f2a7e4b1-9c3d-4f8a-b6e5-1d0c2a9f7e3b");
 
     c.routes(
-      handlesCommand(CreditThirdPartyAccountSchema),
-      recordsEvent(ThirdPartyAccountCreditedSchema),
-      recordsEvent(ThirdPartyAccountCreditFailedSchema),
+      handlesCommand(CreditThirdPartyAccount),
+      recordsEvent(ThirdPartyAccountCredited),
+      recordsEvent(ThirdPartyAccountCreditFailed),
     );
   },
 
@@ -33,7 +33,7 @@ export const ThirdPartyBankIntegrationHandler: IntegrationMessageHandler = {
     const m = c as DomainCommand;
 
     switch (m.$typeName) {
-      case CreditThirdPartyAccountSchema.typeName:
+      case CreditThirdPartyAccount.typeName:
         s.log(
           `crediting third-party account ${m.accountId} with ${formatAmount(m.amount)} (transaction ${m.transactionId})`,
         );
@@ -43,7 +43,7 @@ export const ThirdPartyBankIntegrationHandler: IntegrationMessageHandler = {
             `third-party bank rejected the credit: account ${m.accountId} not found`,
           );
           s.recordEvent(
-            create(ThirdPartyAccountCreditFailedSchema, {
+            create(ThirdPartyAccountCreditFailed, {
               transactionId: m.transactionId,
               accountId: m.accountId,
               amount: m.amount,
@@ -51,7 +51,7 @@ export const ThirdPartyBankIntegrationHandler: IntegrationMessageHandler = {
           );
         } else {
           s.recordEvent(
-            create(ThirdPartyAccountCreditedSchema, {
+            create(ThirdPartyAccountCredited, {
               transactionId: m.transactionId,
               accountId: m.accountId,
               amount: m.amount,

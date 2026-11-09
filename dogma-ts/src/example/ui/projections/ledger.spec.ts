@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { create } from "@/dogma/index.ts";
 import { newApp } from "@/example/app.ts";
 import {
-  DepositSchema,
-  OpenAccountForNewCustomerSchema,
-  TransferSchema,
-  WithdrawSchema,
+  Deposit,
+  OpenAccountForNewCustomer,
+  Transfer,
+  Withdraw,
 } from "@/example/messages/index.ts";
 import { mustNewDB } from "@/example/ui/projections/index.ts";
 import { begin, executeCommand } from "@/testkit/index.ts";
@@ -18,7 +18,7 @@ describe("LedgerProjectionHandler", () => {
         .enableHandlers("ledger")
         .prepare(
           executeCommand(
-            create(OpenAccountForNewCustomerSchema, {
+            create(OpenAccountForNewCustomer, {
               customerId: "C001",
               customerName: "Anna Smith",
               accountId: "A001",
@@ -57,7 +57,7 @@ describe("LedgerProjectionHandler", () => {
         .enableHandlers("ledger")
         .prepare(
           executeCommand(
-            create(OpenAccountForNewCustomerSchema, {
+            create(OpenAccountForNewCustomer, {
               customerId: "C001",
               customerName: "Anna Smith",
               accountId: "A001",
@@ -65,7 +65,7 @@ describe("LedgerProjectionHandler", () => {
             }),
           ),
           executeCommand(
-            create(DepositSchema, {
+            create(Deposit, {
               transactionId: "T001",
               accountId: "A001",
               amount: 150n,
@@ -120,7 +120,7 @@ describe("LedgerProjectionHandler", () => {
         .enableHandlers("ledger")
         .prepare(
           executeCommand(
-            create(OpenAccountForNewCustomerSchema, {
+            create(OpenAccountForNewCustomer, {
               customerId: "C001",
               customerName: "Anna Smith",
               accountId: "A001",
@@ -128,14 +128,14 @@ describe("LedgerProjectionHandler", () => {
             }),
           ),
           executeCommand(
-            create(DepositSchema, {
+            create(Deposit, {
               transactionId: "T001",
               accountId: "A001",
               amount: 500n,
             }),
           ),
           executeCommand(
-            create(WithdrawSchema, {
+            create(Withdraw, {
               transactionId: "T002",
               accountId: "A001",
               amount: 150n,
@@ -192,7 +192,7 @@ describe("LedgerProjectionHandler", () => {
         .enableHandlers("ledger")
         .prepare(
           executeCommand(
-            create(OpenAccountForNewCustomerSchema, {
+            create(OpenAccountForNewCustomer, {
               customerId: "C001",
               customerName: "Anna Smith",
               accountId: "A001",
@@ -200,7 +200,7 @@ describe("LedgerProjectionHandler", () => {
             }),
           ),
           executeCommand(
-            create(OpenAccountForNewCustomerSchema, {
+            create(OpenAccountForNewCustomer, {
               customerId: "C002",
               customerName: "Bob Jones",
               accountId: "A002",
@@ -208,14 +208,14 @@ describe("LedgerProjectionHandler", () => {
             }),
           ),
           executeCommand(
-            create(DepositSchema, {
+            create(Deposit, {
               transactionId: "T001",
               accountId: "A001",
               amount: 500n,
             }),
           ),
           executeCommand(
-            create(TransferSchema, {
+            create(Transfer, {
               transactionId: "T002",
               fromAccountId: "A001",
               toAccountId: "A002",
@@ -261,7 +261,7 @@ describe("LedgerProjectionHandler", () => {
         .enableHandlers("ledger")
         .prepare(
           executeCommand(
-            create(OpenAccountForNewCustomerSchema, {
+            create(OpenAccountForNewCustomer, {
               customerId: "C001",
               customerName: "Anna Smith",
               accountId: "A001",
@@ -269,7 +269,7 @@ describe("LedgerProjectionHandler", () => {
             }),
           ),
           executeCommand(
-            create(OpenAccountForNewCustomerSchema, {
+            create(OpenAccountForNewCustomer, {
               customerId: "C002",
               customerName: "Bob Jones",
               accountId: "A002",
@@ -277,14 +277,14 @@ describe("LedgerProjectionHandler", () => {
             }),
           ),
           executeCommand(
-            create(DepositSchema, {
+            create(Deposit, {
               transactionId: "T001",
               accountId: "A001",
               amount: 1000000n,
             }),
           ),
           executeCommand(
-            create(TransferSchema, {
+            create(Transfer, {
               transactionId: "T002",
               fromAccountId: "A001",
               toAccountId: "A002",

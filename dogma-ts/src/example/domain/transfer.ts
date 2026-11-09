@@ -16,40 +16,41 @@ import {
   UnexpectedMessageError,
 } from "@/dogma/index.ts";
 import {
-  AccountCreditedSchema,
-  AccountDebitDeclinedSchema,
-  AccountDebitedSchema,
-  ApproveTransferSchema,
-  ConsumeDailyDebitLimitSchema,
-  CreditAccountSchema,
-  CreditThirdPartyAccountSchema,
-  DailyDebitLimitConsumedSchema,
-  DailyDebitLimitExceededSchema,
-  DebitAccountSchema,
+  AccountCredited,
+  AccountDebitDeclined,
+  AccountDebited,
+  ApproveTransfer,
+  ConsumeDailyDebitLimit,
+  CreditAccount,
+  CreditThirdPartyAccount,
+  DailyDebitLimitConsumed,
+  DailyDebitLimitExceeded,
+  DebitAccount,
   DebitFailureReason,
-  DeclineTransferSchema,
+  DeclineTransfer,
   type DomainEvent,
   dailyDebitLimitDate,
   formatAmount,
   formatDebitFailureReason,
-  MarkTransferAsFailedSchema,
-  ThirdPartyAccountCreditedSchema,
-  ThirdPartyAccountCreditFailedSchema,
+  MarkTransferAsFailed,
+  ThirdPartyAccountCredited,
+  ThirdPartyAccountCreditFailed,
   TransactionType,
-  TransferApprovedSchema,
-  TransferDeclinedSchema,
-  TransferFailedSchema,
-  TransferStartedSchema,
+  TransferApproved,
+  TransferDeclined,
+  TransferFailed,
+  TransferStarted,
 } from "../messages/index.ts";
 import {
-  type TransferReadyToProceed,
+  type TransferReadyToProceed as TransferReadyToProceedMessage,
   TransferReadyToProceedSchema,
 } from "./transfer_pb.ts";
 
-export { type TransferReadyToProceed, TransferReadyToProceedSchema };
+export type TransferReadyToProceed = TransferReadyToProceedMessage;
+export const TransferReadyToProceed = TransferReadyToProceedSchema;
 
 registerDeadline(
-  TransferReadyToProceedSchema,
+  TransferReadyToProceed,
   "b5474f89-e985-4661-b85b-645347a4a645",
   {
     validate(m: TransferReadyToProceed) {
@@ -82,25 +83,25 @@ export const TransferProcessHandler: ProcessMessageHandler<TransferProcess> = {
     c.identity("transfer", "35afbe82-24c1-4868-a689-c2ec96c2e953");
 
     c.routes(
-      handlesEvent(TransferStartedSchema),
-      handlesEvent(AccountDebitedSchema),
-      handlesEvent(AccountDebitDeclinedSchema),
-      handlesEvent(DailyDebitLimitConsumedSchema),
-      handlesEvent(DailyDebitLimitExceededSchema),
-      handlesEvent(AccountCreditedSchema),
-      handlesEvent(ThirdPartyAccountCreditedSchema),
-      handlesEvent(ThirdPartyAccountCreditFailedSchema),
-      handlesEvent(TransferApprovedSchema),
-      handlesEvent(TransferDeclinedSchema),
-      handlesEvent(TransferFailedSchema),
-      executesCommand(DebitAccountSchema),
-      executesCommand(ConsumeDailyDebitLimitSchema),
-      executesCommand(CreditAccountSchema),
-      executesCommand(CreditThirdPartyAccountSchema),
-      executesCommand(ApproveTransferSchema),
-      executesCommand(DeclineTransferSchema),
-      executesCommand(MarkTransferAsFailedSchema),
-      schedulesDeadline(TransferReadyToProceedSchema),
+      handlesEvent(TransferStarted),
+      handlesEvent(AccountDebited),
+      handlesEvent(AccountDebitDeclined),
+      handlesEvent(DailyDebitLimitConsumed),
+      handlesEvent(DailyDebitLimitExceeded),
+      handlesEvent(AccountCredited),
+      handlesEvent(ThirdPartyAccountCredited),
+      handlesEvent(ThirdPartyAccountCreditFailed),
+      handlesEvent(TransferApproved),
+      handlesEvent(TransferDeclined),
+      handlesEvent(TransferFailed),
+      executesCommand(DebitAccount),
+      executesCommand(ConsumeDailyDebitLimit),
+      executesCommand(CreditAccount),
+      executesCommand(CreditThirdPartyAccount),
+      executesCommand(ApproveTransfer),
+      executesCommand(DeclineTransfer),
+      executesCommand(MarkTransferAsFailed),
+      schedulesDeadline(TransferReadyToProceed),
     );
   },
 
@@ -132,32 +133,32 @@ export const TransferProcessHandler: ProcessMessageHandler<TransferProcess> = {
   routeEventToInstance(_ctx: Context, e: Event): [string, boolean] {
     const m = e as DomainEvent;
     switch (m.$typeName) {
-      case TransferStartedSchema.typeName:
+      case TransferStarted.typeName:
         return [m.transactionId, true];
-      case AccountDebitedSchema.typeName:
+      case AccountDebited.typeName:
         return [
           m.transactionId,
           m.transactionType === TransactionType.TRANSFER,
         ];
-      case AccountDebitDeclinedSchema.typeName:
+      case AccountDebitDeclined.typeName:
         return [
           m.transactionId,
           m.transactionType === TransactionType.TRANSFER,
         ];
-      case DailyDebitLimitConsumedSchema.typeName:
+      case DailyDebitLimitConsumed.typeName:
         return [m.transactionId, m.debitType === TransactionType.TRANSFER];
-      case DailyDebitLimitExceededSchema.typeName:
+      case DailyDebitLimitExceeded.typeName:
         return [m.transactionId, m.debitType === TransactionType.TRANSFER];
-      case AccountCreditedSchema.typeName:
+      case AccountCredited.typeName:
         return [
           m.transactionId,
           m.transactionType === TransactionType.TRANSFER,
         ];
-      case ThirdPartyAccountCreditedSchema.typeName:
-      case ThirdPartyAccountCreditFailedSchema.typeName:
-      case TransferApprovedSchema.typeName:
-      case TransferDeclinedSchema.typeName:
-      case TransferFailedSchema.typeName:
+      case ThirdPartyAccountCredited.typeName:
+      case ThirdPartyAccountCreditFailed.typeName:
+      case TransferApproved.typeName:
+      case TransferDeclined.typeName:
+      case TransferFailed.typeName:
         return [m.transactionId, true];
       default:
         throw new UnexpectedMessageError();
@@ -172,7 +173,7 @@ export const TransferProcessHandler: ProcessMessageHandler<TransferProcess> = {
   ): void {
     const m = e as DomainEvent;
     switch (m.$typeName) {
-      case TransferStartedSchema.typeName: {
+      case TransferStarted.typeName: {
         s.mutate((root) => {
           root.fromAccountId = m.fromAccountId;
           root.toAccountId = m.toAccountId;
@@ -183,7 +184,7 @@ export const TransferProcessHandler: ProcessMessageHandler<TransferProcess> = {
         const scheduledAt = new Date(m.scheduledTime);
 
         s.scheduleDeadline(
-          create(TransferReadyToProceedSchema, {
+          create(TransferReadyToProceed, {
             transactionId: m.transactionId,
           }),
           scheduledAt,
@@ -191,9 +192,9 @@ export const TransferProcessHandler: ProcessMessageHandler<TransferProcess> = {
         return;
       }
 
-      case AccountDebitedSchema.typeName:
+      case AccountDebited.typeName:
         s.executeCommand(
-          create(ConsumeDailyDebitLimitSchema, {
+          create(ConsumeDailyDebitLimit, {
             transactionId: m.transactionId,
             accountId: m.accountId,
             debitType: TransactionType.TRANSFER,
@@ -203,9 +204,9 @@ export const TransferProcessHandler: ProcessMessageHandler<TransferProcess> = {
         );
         return;
 
-      case AccountDebitDeclinedSchema.typeName:
+      case AccountDebitDeclined.typeName:
         s.executeCommand(
-          create(DeclineTransferSchema, {
+          create(DeclineTransfer, {
             transactionId: m.transactionId,
             fromAccountId: t.fromAccountId,
             toAccountId: t.toAccountId,
@@ -215,10 +216,10 @@ export const TransferProcessHandler: ProcessMessageHandler<TransferProcess> = {
         );
         return;
 
-      case DailyDebitLimitConsumedSchema.typeName:
+      case DailyDebitLimitConsumed.typeName:
         if (t.toThirdPartyBank) {
           s.executeCommand(
-            create(CreditThirdPartyAccountSchema, {
+            create(CreditThirdPartyAccount, {
               transactionId: m.transactionId,
               accountId: t.toAccountId,
               amount: m.amount,
@@ -226,7 +227,7 @@ export const TransferProcessHandler: ProcessMessageHandler<TransferProcess> = {
           );
         } else {
           s.executeCommand(
-            create(CreditAccountSchema, {
+            create(CreditAccount, {
               transactionId: m.transactionId,
               accountId: t.toAccountId,
               transactionType: TransactionType.TRANSFER,
@@ -236,14 +237,14 @@ export const TransferProcessHandler: ProcessMessageHandler<TransferProcess> = {
         }
         return;
 
-      case DailyDebitLimitExceededSchema.typeName:
+      case DailyDebitLimitExceeded.typeName:
         s.mutate((root) => {
           root.declineReason = DebitFailureReason.DAILY_DEBIT_LIMIT_EXCEEDED;
         });
 
         // compensate the initial debit
         s.executeCommand(
-          create(CreditAccountSchema, {
+          create(CreditAccount, {
             transactionId: m.transactionId,
             accountId: t.fromAccountId,
             transactionType: TransactionType.TRANSFER,
@@ -252,11 +253,11 @@ export const TransferProcessHandler: ProcessMessageHandler<TransferProcess> = {
         );
         return;
 
-      case AccountCreditedSchema.typeName:
+      case AccountCredited.typeName:
         if (t.toAccountId === m.accountId) {
           // it was a credit to complete the transfer (success)
           s.executeCommand(
-            create(ApproveTransferSchema, {
+            create(ApproveTransfer, {
               transactionId: m.transactionId,
               fromAccountId: t.fromAccountId,
               toAccountId: t.toAccountId,
@@ -266,7 +267,7 @@ export const TransferProcessHandler: ProcessMessageHandler<TransferProcess> = {
         } else {
           // it was a compensating credit to undo the transfer (business rejection)
           s.executeCommand(
-            create(DeclineTransferSchema, {
+            create(DeclineTransfer, {
               transactionId: m.transactionId,
               fromAccountId: t.fromAccountId,
               toAccountId: t.toAccountId,
@@ -279,9 +280,9 @@ export const TransferProcessHandler: ProcessMessageHandler<TransferProcess> = {
         }
         return;
 
-      case ThirdPartyAccountCreditedSchema.typeName:
+      case ThirdPartyAccountCredited.typeName:
         s.executeCommand(
-          create(ApproveTransferSchema, {
+          create(ApproveTransfer, {
             transactionId: m.transactionId,
             fromAccountId: t.fromAccountId,
             toAccountId: t.toAccountId,
@@ -290,9 +291,9 @@ export const TransferProcessHandler: ProcessMessageHandler<TransferProcess> = {
         );
         return;
 
-      case ThirdPartyAccountCreditFailedSchema.typeName:
+      case ThirdPartyAccountCreditFailed.typeName:
         s.executeCommand(
-          create(MarkTransferAsFailedSchema, {
+          create(MarkTransferAsFailed, {
             transactionId: m.transactionId,
             fromAccountId: t.fromAccountId,
             toAccountId: t.toAccountId,
@@ -301,7 +302,7 @@ export const TransferProcessHandler: ProcessMessageHandler<TransferProcess> = {
         );
 
         s.executeCommand(
-          create(CreditAccountSchema, {
+          create(CreditAccount, {
             transactionId: m.transactionId,
             accountId: t.fromAccountId,
             transactionType: TransactionType.TRANSFER,
@@ -310,9 +311,9 @@ export const TransferProcessHandler: ProcessMessageHandler<TransferProcess> = {
         );
         return;
 
-      case TransferApprovedSchema.typeName:
-      case TransferDeclinedSchema.typeName:
-      case TransferFailedSchema.typeName:
+      case TransferApproved.typeName:
+      case TransferDeclined.typeName:
+      case TransferFailed.typeName:
         s.end();
         return;
 
@@ -329,9 +330,9 @@ export const TransferProcessHandler: ProcessMessageHandler<TransferProcess> = {
   ): void {
     const m = d as TransferReadyToProceed;
     switch (m.$typeName) {
-      case TransferReadyToProceedSchema.typeName:
+      case TransferReadyToProceed.typeName:
         s.executeCommand(
-          create(DebitAccountSchema, {
+          create(DebitAccount, {
             transactionId: m.transactionId,
             accountId: t.fromAccountId,
             transactionType: TransactionType.TRANSFER,

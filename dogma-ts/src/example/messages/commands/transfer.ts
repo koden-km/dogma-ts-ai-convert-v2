@@ -5,26 +5,27 @@ import {
   isValidDebitFailureReason,
 } from "../transaction.ts";
 import {
-  type ApproveTransfer,
+  type ApproveTransfer as ApproveTransferMessage,
   ApproveTransferSchema,
-  type DeclineTransfer,
+  type DeclineTransfer as DeclineTransferMessage,
   DeclineTransferSchema,
-  type MarkTransferAsFailed,
+  type MarkTransferAsFailed as MarkTransferAsFailedMessage,
   MarkTransferAsFailedSchema,
-  type Transfer,
+  type Transfer as TransferMessage,
   TransferSchema,
 } from "./transfer_pb.ts";
 
-export {
-  type ApproveTransfer,
-  ApproveTransferSchema,
-  type DeclineTransfer,
-  DeclineTransferSchema,
-  type MarkTransferAsFailed,
-  MarkTransferAsFailedSchema,
-  type Transfer,
-  TransferSchema,
-};
+export type Transfer = TransferMessage;
+export const Transfer = TransferSchema;
+
+export type ApproveTransfer = ApproveTransferMessage;
+export const ApproveTransfer = ApproveTransferSchema;
+
+export type DeclineTransfer = DeclineTransferMessage;
+export const DeclineTransfer = DeclineTransferSchema;
+
+export type MarkTransferAsFailed = MarkTransferAsFailedMessage;
+export const MarkTransferAsFailed = MarkTransferAsFailedSchema;
 
 export type DomainCommand =
   | Transfer
@@ -32,26 +33,26 @@ export type DomainCommand =
   | DeclineTransfer
   | MarkTransferAsFailed;
 
-registerCommand(TransferSchema, "5ee87c7b-bde3-4b39-9f12-44968cdb9889", {
+registerCommand(Transfer, "5ee87c7b-bde3-4b39-9f12-44968cdb9889", {
   validate: validateTransfer,
   describe: describeTransfer,
   allowIdempotent: true,
 });
 
-registerCommand(ApproveTransferSchema, "0d22aaa5-4449-459a-b9b1-c5fb0ce4a990", {
+registerCommand(ApproveTransfer, "0d22aaa5-4449-459a-b9b1-c5fb0ce4a990", {
   validate: validateApproveTransfer,
   describe: describeApproveTransfer,
   allowIdempotent: true,
 });
 
-registerCommand(DeclineTransferSchema, "d7d069a2-41fc-415e-91dd-7db3affa9f6d", {
+registerCommand(DeclineTransfer, "d7d069a2-41fc-415e-91dd-7db3affa9f6d", {
   validate: validateDeclineTransfer,
   describe: describeDeclineTransfer,
   allowIdempotent: true,
 });
 
 registerCommand(
-  MarkTransferAsFailedSchema,
+  MarkTransferAsFailed,
   "b3e5f6a2-7c1d-4e8b-a9f0-3d2c1e4b5f6a",
   {
     validate: validateMarkTransferAsFailed,

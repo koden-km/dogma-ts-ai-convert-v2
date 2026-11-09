@@ -12,54 +12,31 @@ import * as transfer from "./transfer.ts";
 import * as withdrawal from "./withdrawal.ts";
 
 export {
-  type AccountCredited,
-  AccountCreditedSchema,
-  type AccountDebitDeclined,
-  AccountDebitDeclinedSchema,
-  type AccountDebited,
-  AccountDebitedSchema,
-  type AccountOpened,
-  AccountOpenedSchema,
+  AccountCredited,
+  AccountDebitDeclined,
+  AccountDebited,
+  AccountOpened,
 } from "./account.ts";
+export { CustomerAcquired } from "./customer.ts";
 export {
-  type CustomerAcquired,
-  CustomerAcquiredSchema,
-} from "./customer.ts";
-export {
-  type DailyDebitLimitConsumed,
-  DailyDebitLimitConsumedSchema,
-  type DailyDebitLimitExceeded,
-  DailyDebitLimitExceededSchema,
+  DailyDebitLimitConsumed,
+  DailyDebitLimitExceeded,
 } from "./dailydebitlimit.ts";
+export { DepositApproved, DepositStarted } from "./deposit.ts";
 export {
-  type DepositApproved,
-  DepositApprovedSchema,
-  type DepositStarted,
-  DepositStartedSchema,
-} from "./deposit.ts";
-export {
-  type ThirdPartyAccountCredited,
-  ThirdPartyAccountCreditedSchema,
-  type ThirdPartyAccountCreditFailed,
-  ThirdPartyAccountCreditFailedSchema,
+  ThirdPartyAccountCredited,
+  ThirdPartyAccountCreditFailed,
 } from "./third-party-credit.ts";
 export {
-  type TransferApproved,
-  TransferApprovedSchema,
-  type TransferDeclined,
-  TransferDeclinedSchema,
-  type TransferFailed,
-  TransferFailedSchema,
-  type TransferStarted,
-  TransferStartedSchema,
+  TransferApproved,
+  TransferDeclined,
+  TransferFailed,
+  TransferStarted,
 } from "./transfer.ts";
 export {
-  type WithdrawalApproved,
-  WithdrawalApprovedSchema,
-  type WithdrawalDeclined,
-  WithdrawalDeclinedSchema,
-  type WithdrawalStarted,
-  WithdrawalStartedSchema,
+  WithdrawalApproved,
+  WithdrawalDeclined,
+  WithdrawalStarted,
 } from "./withdrawal.ts";
 
 export type DomainEvent =

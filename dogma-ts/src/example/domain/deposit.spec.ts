@@ -2,11 +2,11 @@ import { describe, it } from "vitest";
 import { create } from "@/dogma/index.ts";
 import { newApp } from "@/example/app.ts";
 import {
-  DepositApprovedSchema,
-  DepositSchema,
-  OpenAccountSchema,
-  WithdrawalApprovedSchema,
-  WithdrawSchema,
+  Deposit,
+  DepositApproved,
+  OpenAccount,
+  Withdraw,
+  WithdrawalApproved,
 } from "@/example/messages/index.ts";
 import { begin, executeCommand, toRecordEvent } from "@/testkit/index.ts";
 
@@ -16,7 +16,7 @@ describe("Deposit", () => {
       begin(newApp())
         .prepare(
           executeCommand(
-            create(OpenAccountSchema, {
+            create(OpenAccount, {
               customerId: "C001",
               accountId: "A001",
               accountName: "Anna Smith",
@@ -25,14 +25,14 @@ describe("Deposit", () => {
         )
         .expect(
           executeCommand(
-            create(DepositSchema, {
+            create(Deposit, {
               transactionId: "T001",
               accountId: "A001",
               amount: 500n,
             }),
           ),
           toRecordEvent(
-            create(DepositApprovedSchema, {
+            create(DepositApproved, {
               transactionId: "T001",
               accountId: "A001",
               amount: 500n,
@@ -42,7 +42,7 @@ describe("Deposit", () => {
         // verify that funds are available
         .expect(
           executeCommand(
-            create(WithdrawSchema, {
+            create(Withdraw, {
               transactionId: "W001",
               accountId: "A001",
               amount: 100n,
@@ -50,7 +50,7 @@ describe("Deposit", () => {
             }),
           ),
           toRecordEvent(
-            create(WithdrawalApprovedSchema, {
+            create(WithdrawalApproved, {
               transactionId: "W001",
               accountId: "A001",
               amount: 100n,

@@ -1,16 +1,6 @@
-import {
-  DebitFailureReason,
-  DebitFailureReasonSchema,
-  TransactionType,
-  TransactionTypeSchema,
-} from "./transaction_pb.ts";
+import { DebitFailureReason, TransactionType } from "./transaction_pb.ts";
 
-export {
-  DebitFailureReason,
-  DebitFailureReasonSchema,
-  TransactionType,
-  TransactionTypeSchema,
-};
+export { DebitFailureReason, TransactionType };
 
 // isDebit returns true if the transaction type is a debit type.
 export function isDebit(t: TransactionType): boolean {

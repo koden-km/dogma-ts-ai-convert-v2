@@ -11,46 +11,24 @@ import * as transfer from "./transfer.ts";
 import * as withdrawal from "./withdrawal.ts";
 
 export {
-  type CreditAccount,
-  CreditAccountSchema,
-  type DebitAccount,
-  DebitAccountSchema,
-  type OpenAccount,
-  type OpenAccountForNewCustomer,
-  OpenAccountForNewCustomerSchema,
-  OpenAccountSchema,
+  CreditAccount,
+  DebitAccount,
+  OpenAccount,
+  OpenAccountForNewCustomer,
 } from "./account.ts";
+export { ConsumeDailyDebitLimit } from "./daily-debit-limit.ts";
+export { ApproveDeposit, Deposit } from "./deposit.ts";
+export { CreditThirdPartyAccount } from "./third-party-credit.ts";
 export {
-  type ConsumeDailyDebitLimit,
-  ConsumeDailyDebitLimitSchema,
-} from "./daily-debit-limit.ts";
-export {
-  type ApproveDeposit,
-  ApproveDepositSchema,
-  type Deposit,
-  DepositSchema,
-} from "./deposit.ts";
-export {
-  type CreditThirdPartyAccount,
-  CreditThirdPartyAccountSchema,
-} from "./third-party-credit.ts";
-export {
-  type ApproveTransfer,
-  ApproveTransferSchema,
-  type DeclineTransfer,
-  DeclineTransferSchema,
-  type MarkTransferAsFailed,
-  MarkTransferAsFailedSchema,
-  type Transfer,
-  TransferSchema,
+  ApproveTransfer,
+  DeclineTransfer,
+  MarkTransferAsFailed,
+  Transfer,
 } from "./transfer.ts";
 export {
-  type ApproveWithdrawal,
-  ApproveWithdrawalSchema,
-  type DeclineWithdrawal,
-  DeclineWithdrawalSchema,
-  type Withdraw,
-  WithdrawSchema,
+  ApproveWithdrawal,
+  DeclineWithdrawal,
+  Withdraw,
 } from "./withdrawal.ts";
 
 export type DomainCommand =

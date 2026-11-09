@@ -12,10 +12,10 @@ import {
   UnexpectedMessageError,
 } from "@/dogma/index.ts";
 import {
-  CustomerAcquiredSchema,
+  CustomerAcquired,
   type DomainCommand,
   type DomainEvent,
-  OpenAccountForNewCustomerSchema,
+  OpenAccountForNewCustomer,
 } from "../messages/index.ts";
 
 // Customer is the aggregate root for a bank customer.
@@ -31,8 +31,8 @@ export const CustomerHandler: AggregateMessageHandler<Customer> = {
     c.identity("customer", "f30111d5-f100-4495-90ad-b09746ba8477");
 
     c.routes(
-      handlesCommand(OpenAccountForNewCustomerSchema),
-      recordsEvent(CustomerAcquiredSchema),
+      handlesCommand(OpenAccountForNewCustomer),
+      recordsEvent(CustomerAcquired),
     );
   },
 
@@ -49,7 +49,7 @@ export const CustomerHandler: AggregateMessageHandler<Customer> = {
   applyEvent(r: Customer, e: Event): void {
     const m = e as DomainEvent;
     switch (m.$typeName) {
-      case CustomerAcquiredSchema.typeName:
+      case CustomerAcquired.typeName:
         r.name = m.customerName;
         break;
     }
@@ -58,7 +58,7 @@ export const CustomerHandler: AggregateMessageHandler<Customer> = {
   routeCommandToInstance(c: Command): string {
     const m = c as DomainCommand;
     switch (m.$typeName) {
-      case OpenAccountForNewCustomerSchema.typeName:
+      case OpenAccountForNewCustomer.typeName:
         return m.customerId;
       default:
         throw new UnexpectedMessageError();
@@ -72,13 +72,13 @@ export const CustomerHandler: AggregateMessageHandler<Customer> = {
   ): void {
     const m = c as DomainCommand;
     switch (m.$typeName) {
-      case OpenAccountForNewCustomerSchema.typeName:
+      case OpenAccountForNewCustomer.typeName:
         if (r.name !== "") {
           s.log("customer has already been acquired");
           return;
         }
         s.recordEvent(
-          create(CustomerAcquiredSchema, {
+          create(CustomerAcquired, {
             customerId: m.customerId,
             customerName: m.customerName,
             accountId: m.accountId,

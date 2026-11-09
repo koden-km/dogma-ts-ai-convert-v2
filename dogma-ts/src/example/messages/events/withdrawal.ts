@@ -5,22 +5,22 @@ import {
   isValidDebitFailureReason,
 } from "../transaction.ts";
 import {
-  type WithdrawalApproved,
+  type WithdrawalApproved as WithdrawalApprovedMessage,
   WithdrawalApprovedSchema,
-  type WithdrawalDeclined,
+  type WithdrawalDeclined as WithdrawalDeclinedMessage,
   WithdrawalDeclinedSchema,
-  type WithdrawalStarted,
+  type WithdrawalStarted as WithdrawalStartedMessage,
   WithdrawalStartedSchema,
 } from "./withdrawal_pb.ts";
 
-export {
-  type WithdrawalApproved,
-  WithdrawalApprovedSchema,
-  type WithdrawalDeclined,
-  WithdrawalDeclinedSchema,
-  type WithdrawalStarted,
-  WithdrawalStartedSchema,
-};
+export type WithdrawalStarted = WithdrawalStartedMessage;
+export const WithdrawalStarted = WithdrawalStartedSchema;
+
+export type WithdrawalApproved = WithdrawalApprovedMessage;
+export const WithdrawalApproved = WithdrawalApprovedSchema;
+
+export type WithdrawalDeclined = WithdrawalDeclinedMessage;
+export const WithdrawalDeclined = WithdrawalDeclinedSchema;
 
 export type DomainEvent =
   | WithdrawalStarted
@@ -28,7 +28,7 @@ export type DomainEvent =
   | WithdrawalDeclined;
 
 registerEvent(
-  WithdrawalStartedSchema,
+  WithdrawalStarted,
   "ae327c68-3de9-4fe1-aa39-c4830200602c",
   {
     validate: validateWithdrawalStarted,
@@ -38,7 +38,7 @@ registerEvent(
 );
 
 registerEvent(
-  WithdrawalApprovedSchema,
+  WithdrawalApproved,
   "8551621a-ef28-42aa-b815-d5a448299d38",
   {
     validate: validateWithdrawalApproved,
@@ -48,7 +48,7 @@ registerEvent(
 );
 
 registerEvent(
-  WithdrawalDeclinedSchema,
+  WithdrawalDeclined,
   "a87f5f6f-52ec-4eeb-954f-2af97a165181",
   {
     validate: validateWithdrawalDeclined,

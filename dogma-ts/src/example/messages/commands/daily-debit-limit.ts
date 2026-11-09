@@ -7,16 +7,17 @@ import {
   isValidTransactionType,
 } from "../transaction.ts";
 import {
-  type ConsumeDailyDebitLimit,
+  type ConsumeDailyDebitLimit as ConsumeDailyDebitLimitMessage,
   ConsumeDailyDebitLimitSchema,
 } from "./daily-debit-limit_pb.ts";
 
-export { type ConsumeDailyDebitLimit, ConsumeDailyDebitLimitSchema };
+export type ConsumeDailyDebitLimit = ConsumeDailyDebitLimitMessage;
+export const ConsumeDailyDebitLimit = ConsumeDailyDebitLimitSchema;
 
 export type DomainCommand = ConsumeDailyDebitLimit;
 
 registerCommand(
-  ConsumeDailyDebitLimitSchema,
+  ConsumeDailyDebitLimit,
   "d86ca816-6333-4b78-a1d3-9368b3adcf65",
   {
     validate: validateConsumeDailyDebitLimit,

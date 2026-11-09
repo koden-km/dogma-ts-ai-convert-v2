@@ -1,29 +1,28 @@
 import { InvalidMessageError, registerEvent } from "@/dogma/message.ts";
 import { formatAmount } from "../format.ts";
 import {
-  type DepositApproved,
+  type DepositApproved as DepositApprovedMessage,
   DepositApprovedSchema,
-  type DepositStarted,
+  type DepositStarted as DepositStartedMessage,
   DepositStartedSchema,
 } from "./deposit_pb.ts";
 
-export {
-  type DepositApproved,
-  DepositApprovedSchema,
-  type DepositStarted,
-  DepositStartedSchema,
-};
+export type DepositStarted = DepositStartedMessage;
+export const DepositStarted = DepositStartedSchema;
+
+export type DepositApproved = DepositApprovedMessage;
+export const DepositApproved = DepositApprovedSchema;
 
 export type DomainEvent = DepositStarted | DepositApproved;
 
-registerEvent(DepositStartedSchema, "699ae4e6-ea0a-4450-8a04-8ec5248b8042", {
+registerEvent(DepositStarted, "699ae4e6-ea0a-4450-8a04-8ec5248b8042", {
   validate: validateDepositStarted,
   describe: describeDepositStarted,
   allowIdempotent: true,
 });
 
 registerEvent(
-  DepositApprovedSchema,
+  DepositApproved,
   "8520d995-5c0e-4905-9bbf-99b5f8028505",
   {
     validate: validateDepositApproved,

@@ -4,16 +4,16 @@ import { newApp } from "@/example/app.ts";
 import { maximumDailyDebitLimit } from "@/example/domain/daily-debit-limit.ts";
 import {
   DebitFailureReason,
-  DepositSchema,
-  OpenAccountSchema,
-  ThirdPartyAccountCreditFailedSchema,
-  TransferApprovedSchema,
-  TransferDeclinedSchema,
-  TransferFailedSchema,
-  TransferSchema,
-  WithdrawalApprovedSchema,
-  WithdrawalDeclinedSchema,
-  WithdrawSchema,
+  Deposit,
+  OpenAccount,
+  ThirdPartyAccountCreditFailed,
+  Transfer,
+  TransferApproved,
+  TransferDeclined,
+  TransferFailed,
+  Withdraw,
+  WithdrawalApproved,
+  WithdrawalDeclined,
 } from "@/example/messages/index.ts";
 import {
   advanceTime,
@@ -59,21 +59,21 @@ describe("Transfer", () => {
         app()
           .prepare(
             executeCommand(
-              create(OpenAccountSchema, {
+              create(OpenAccount, {
                 customerId: "C001",
                 accountId: "A001",
                 accountName: "Anna Smith",
               }),
             ),
             executeCommand(
-              create(OpenAccountSchema, {
+              create(OpenAccount, {
                 customerId: "C002",
                 accountId: "A002",
                 accountName: "Bob Jones",
               }),
             ),
             executeCommand(
-              create(DepositSchema, {
+              create(Deposit, {
                 transactionId: "D001",
                 accountId: "A001",
                 amount: 500n,
@@ -82,7 +82,7 @@ describe("Transfer", () => {
           )
           .expect(
             executeCommand(
-              create(TransferSchema, {
+              create(Transfer, {
                 transactionId: "T001",
                 fromAccountId: "A001",
                 toAccountId: c.toAccountID,
@@ -92,7 +92,7 @@ describe("Transfer", () => {
               }),
             ),
             toRecordEvent(
-              create(TransferApprovedSchema, {
+              create(TransferApproved, {
                 transactionId: "T001",
                 fromAccountId: "A001",
                 toAccountId: c.toAccountID,
@@ -106,21 +106,21 @@ describe("Transfer", () => {
         app()
           .prepare(
             executeCommand(
-              create(OpenAccountSchema, {
+              create(OpenAccount, {
                 customerId: "C001",
                 accountId: "A001",
                 accountName: "Anna Smith",
               }),
             ),
             executeCommand(
-              create(OpenAccountSchema, {
+              create(OpenAccount, {
                 customerId: "C002",
                 accountId: "A002",
                 accountName: "Bob Jones",
               }),
             ),
             executeCommand(
-              create(DepositSchema, {
+              create(Deposit, {
                 transactionId: "D001",
                 accountId: "A001",
                 amount: expectedDailyDebitLimit + 10000n,
@@ -129,7 +129,7 @@ describe("Transfer", () => {
           )
           .expect(
             executeCommand(
-              create(TransferSchema, {
+              create(Transfer, {
                 transactionId: "T002",
                 fromAccountId: "A001",
                 toAccountId: c.toAccountID,
@@ -139,7 +139,7 @@ describe("Transfer", () => {
               }),
             ),
             toRecordEvent(
-              create(TransferApprovedSchema, {
+              create(TransferApproved, {
                 transactionId: "T002",
                 fromAccountId: "A001",
                 toAccountId: c.toAccountID,
@@ -153,21 +153,21 @@ describe("Transfer", () => {
         app(startTimeAt(new Date("2001-02-03T11:22:33Z")))
           .prepare(
             executeCommand(
-              create(OpenAccountSchema, {
+              create(OpenAccount, {
                 customerId: "C001",
                 accountId: "A001",
                 accountName: "Anna Smith",
               }),
             ),
             executeCommand(
-              create(OpenAccountSchema, {
+              create(OpenAccount, {
                 customerId: "C002",
                 accountId: "A002",
                 accountName: "Bob Jones",
               }),
             ),
             executeCommand(
-              create(DepositSchema, {
+              create(Deposit, {
                 transactionId: "D001",
                 accountId: "A001",
                 amount: 500n,
@@ -176,7 +176,7 @@ describe("Transfer", () => {
           )
           .expect(
             executeCommand(
-              create(TransferSchema, {
+              create(Transfer, {
                 transactionId: "T001",
                 fromAccountId: "A001",
                 toAccountId: c.toAccountID,
@@ -185,12 +185,12 @@ describe("Transfer", () => {
                 toThirdPartyBank: c.toThirdPartyBank,
               }),
             ),
-            noneOf(toRecordEventOfType(TransferApprovedSchema)),
+            noneOf(toRecordEventOfType(TransferApproved)),
           )
           .expect(
             advanceTime(toTime(new Date("2001-02-04T00:00:00Z"))),
             toRecordEvent(
-              create(TransferApprovedSchema, {
+              create(TransferApproved, {
                 transactionId: "T001",
                 fromAccountId: "A001",
                 toAccountId: c.toAccountID,
@@ -207,21 +207,21 @@ describe("Transfer", () => {
       begin(newApp())
         .prepare(
           executeCommand(
-            create(OpenAccountSchema, {
+            create(OpenAccount, {
               customerId: "C001",
               accountId: "A001",
               accountName: "Anna Smith",
             }),
           ),
           executeCommand(
-            create(OpenAccountSchema, {
+            create(OpenAccount, {
               customerId: "C002",
               accountId: "A002",
               accountName: "Bob Jones",
             }),
           ),
           executeCommand(
-            create(DepositSchema, {
+            create(Deposit, {
               transactionId: "D001",
               accountId: "A001",
               amount: 500n,
@@ -230,7 +230,7 @@ describe("Transfer", () => {
         )
         .expect(
           executeCommand(
-            create(TransferSchema, {
+            create(Transfer, {
               transactionId: "T001",
               fromAccountId: "A001",
               toAccountId: "A002",
@@ -240,7 +240,7 @@ describe("Transfer", () => {
             }),
           ),
           toRecordEvent(
-            create(TransferDeclinedSchema, {
+            create(TransferDeclined, {
               transactionId: "T001",
               fromAccountId: "A001",
               toAccountId: "A002",
@@ -252,7 +252,7 @@ describe("Transfer", () => {
         // verify that funds are not available
         .expect(
           executeCommand(
-            create(WithdrawSchema, {
+            create(Withdraw, {
               transactionId: "W001",
               accountId: "A002",
               amount: 100n,
@@ -260,7 +260,7 @@ describe("Transfer", () => {
             }),
           ),
           toRecordEvent(
-            create(WithdrawalDeclinedSchema, {
+            create(WithdrawalDeclined, {
               transactionId: "W001",
               accountId: "A002",
               amount: 100n,
@@ -276,21 +276,21 @@ describe("Transfer", () => {
       begin(newApp())
         .prepare(
           executeCommand(
-            create(OpenAccountSchema, {
+            create(OpenAccount, {
               customerId: "C001",
               accountId: "A001",
               accountName: "Anna Smith",
             }),
           ),
           executeCommand(
-            create(OpenAccountSchema, {
+            create(OpenAccount, {
               customerId: "C002",
               accountId: "A002",
               accountName: "Bob Jones",
             }),
           ),
           executeCommand(
-            create(DepositSchema, {
+            create(Deposit, {
               transactionId: "D001",
               accountId: "A001",
               amount: expectedDailyDebitLimit + 10000n,
@@ -299,7 +299,7 @@ describe("Transfer", () => {
         )
         .expect(
           executeCommand(
-            create(TransferSchema, {
+            create(Transfer, {
               transactionId: "T001",
               fromAccountId: "A001",
               toAccountId: "A002",
@@ -309,7 +309,7 @@ describe("Transfer", () => {
             }),
           ),
           toRecordEvent(
-            create(TransferDeclinedSchema, {
+            create(TransferDeclined, {
               transactionId: "T001",
               fromAccountId: "A001",
               toAccountId: "A002",
@@ -321,7 +321,7 @@ describe("Transfer", () => {
         // verify that funds are not available
         .expect(
           executeCommand(
-            create(WithdrawSchema, {
+            create(Withdraw, {
               transactionId: "W001",
               accountId: "A002",
               amount: 100n,
@@ -329,7 +329,7 @@ describe("Transfer", () => {
             }),
           ),
           toRecordEvent(
-            create(WithdrawalDeclinedSchema, {
+            create(WithdrawalDeclined, {
               transactionId: "W001",
               accountId: "A002",
               amount: 100n,
@@ -348,21 +348,21 @@ describe("Transfer", () => {
       begin(newApp())
         .prepare(
           executeCommand(
-            create(OpenAccountSchema, {
+            create(OpenAccount, {
               customerId: "C001",
               accountId: "A001",
               accountName: "Anna Smith",
             }),
           ),
           executeCommand(
-            create(DepositSchema, {
+            create(Deposit, {
               transactionId: "D001",
               accountId: "A001",
               amount: 500n,
             }),
           ),
           executeCommand(
-            create(TransferSchema, {
+            create(Transfer, {
               transactionId: "T001",
               fromAccountId: "A001",
               toAccountId: "100001",
@@ -374,14 +374,14 @@ describe("Transfer", () => {
         )
         .expect(
           recordEvent(
-            create(ThirdPartyAccountCreditFailedSchema, {
+            create(ThirdPartyAccountCreditFailed, {
               transactionId: "T001",
               accountId: "100001",
               amount: 100n,
             }),
           ),
           toRecordEvent(
-            create(TransferFailedSchema, {
+            create(TransferFailed, {
               transactionId: "T001",
               fromAccountId: "A001",
               toAccountId: "100001",
@@ -392,7 +392,7 @@ describe("Transfer", () => {
         // verify that the funds were returned
         .expect(
           executeCommand(
-            create(WithdrawSchema, {
+            create(Withdraw, {
               transactionId: "W001",
               accountId: "A001",
               amount: 500n,
@@ -400,7 +400,7 @@ describe("Transfer", () => {
             }),
           ),
           toRecordEvent(
-            create(WithdrawalApprovedSchema, {
+            create(WithdrawalApproved, {
               transactionId: "W001",
               accountId: "A001",
               amount: 500n,

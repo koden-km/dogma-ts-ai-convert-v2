@@ -3,8 +3,8 @@ import { create, withCancel } from "@/dogma/index.ts";
 import { fromApplication } from "@/enginekit/index.ts";
 import { newApp } from "@/example/app.ts";
 import {
-  DepositSchema,
-  OpenAccountForNewCustomerSchema,
+  Deposit,
+  OpenAccountForNewCustomer,
 } from "@/example/messages/index.ts";
 import { mustNewDB, newUIHandler } from "@/example/ui/index.ts";
 import {
@@ -58,7 +58,7 @@ async function main() {
   if (process.env.SEED_SAMPLE_DATA === "true") {
     await commandExecutor.executeCommand(
       ctx,
-      create(OpenAccountForNewCustomerSchema, {
+      create(OpenAccountForNewCustomer, {
         customerId: "c-anna",
         customerName: "Anna Smith",
         accountId: "100200300",
@@ -67,7 +67,7 @@ async function main() {
     );
     await commandExecutor.executeCommand(
       ctx,
-      create(DepositSchema, {
+      create(Deposit, {
         transactionId: "t-seed-1",
         accountId: "100200300",
         amount: 250000n,
@@ -75,7 +75,7 @@ async function main() {
     );
     await commandExecutor.executeCommand(
       ctx,
-      create(OpenAccountForNewCustomerSchema, {
+      create(OpenAccountForNewCustomer, {
         customerId: "c-bob",
         customerName: "Bob Jones",
         accountId: "400500600",

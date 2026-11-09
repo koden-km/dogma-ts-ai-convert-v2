@@ -1,10 +1,7 @@
 import { describe, it } from "vitest";
 import { create } from "@/dogma/index.ts";
 import { newApp } from "@/example/app.ts";
-import {
-  AccountOpenedSchema,
-  OpenAccountSchema,
-} from "@/example/messages/index.ts";
+import { AccountOpened, OpenAccount } from "@/example/messages/index.ts";
 import {
   begin,
   executeCommand,
@@ -18,14 +15,14 @@ describe("OpenAccount", () => {
     it("the new account is opened", () => {
       begin(newApp()).expect(
         executeCommand(
-          create(OpenAccountSchema, {
+          create(OpenAccount, {
             customerId: "C001",
             accountId: "A001",
             accountName: "Anna Smith",
           }),
         ),
         toRecordEvent(
-          create(AccountOpenedSchema, {
+          create(AccountOpened, {
             customerId: "C001",
             accountId: "A001",
             accountName: "Anna Smith",
@@ -40,7 +37,7 @@ describe("OpenAccount", () => {
       begin(newApp())
         .prepare(
           executeCommand(
-            create(OpenAccountSchema, {
+            create(OpenAccount, {
               customerId: "C001",
               accountId: "A001",
               accountName: "Anna Smith",
@@ -49,13 +46,13 @@ describe("OpenAccount", () => {
         )
         .expect(
           executeCommand(
-            create(OpenAccountSchema, {
+            create(OpenAccount, {
               customerId: "C001",
               accountId: "A001",
               accountName: "Anna Smith",
             }),
           ),
-          noneOf(toRecordEventOfType(AccountOpenedSchema)),
+          noneOf(toRecordEventOfType(AccountOpened)),
         );
     });
   });

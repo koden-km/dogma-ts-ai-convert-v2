@@ -1,15 +1,16 @@
 import { InvalidMessageError, registerEvent } from "@/dogma/message.ts";
 import {
-  type CustomerAcquired,
+  type CustomerAcquired as CustomerAcquiredMessage,
   CustomerAcquiredSchema,
 } from "./customer_pb.ts";
 
-export { type CustomerAcquired, CustomerAcquiredSchema };
+export type CustomerAcquired = CustomerAcquiredMessage;
+export const CustomerAcquired = CustomerAcquiredSchema;
 
 export type DomainEvent = CustomerAcquired;
 
 registerEvent(
-  CustomerAcquiredSchema,
+  CustomerAcquired,
   "ddf33f6c-d120-440e-b611-b86a6c3b80a6",
   {
     validate: validateCustomerAcquired,

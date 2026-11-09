@@ -1,28 +1,27 @@
 import { InvalidMessageError, registerCommand } from "@/dogma/message.ts";
 import { formatAmount } from "../format.ts";
 import {
-  type ApproveDeposit,
+  type ApproveDeposit as ApproveDepositMessage,
   ApproveDepositSchema,
-  type Deposit,
+  type Deposit as DepositMessage,
   DepositSchema,
 } from "./deposit_pb.ts";
 
-export {
-  type ApproveDeposit,
-  ApproveDepositSchema,
-  type Deposit,
-  DepositSchema,
-};
+export type Deposit = DepositMessage;
+export const Deposit = DepositSchema;
+
+export type ApproveDeposit = ApproveDepositMessage;
+export const ApproveDeposit = ApproveDepositSchema;
 
 export type DomainCommand = Deposit | ApproveDeposit;
 
-registerCommand(DepositSchema, "0cfac865-a1d9-4fd2-b085-f8fce0053795", {
+registerCommand(Deposit, "0cfac865-a1d9-4fd2-b085-f8fce0053795", {
   validate: validateDeposit,
   describe: describeDeposit,
   allowIdempotent: true,
 });
 
-registerCommand(ApproveDepositSchema, "6cd5ee09-b59d-45ef-a8ed-91cb1bb6940a", {
+registerCommand(ApproveDeposit, "6cd5ee09-b59d-45ef-a8ed-91cb1bb6940a", {
   validate: validateApproveDeposit,
   describe: describeApproveDeposit,
   allowIdempotent: true,

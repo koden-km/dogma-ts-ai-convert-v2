@@ -9,9 +9,9 @@ import {
   UnexpectedMessageError,
 } from "@/dogma/index.ts";
 import {
-  AccountCreditedSchema,
-  AccountDebitedSchema,
-  AccountOpenedSchema,
+  AccountCredited,
+  AccountDebited,
+  AccountOpened,
   type DomainEvent,
   TransactionType,
 } from "@/example/messages/index.ts";
@@ -69,9 +69,9 @@ export const LedgerProjectionHandler: MessageHandler = {
     c.identity("ledger", "a1b2c3d4-e5f6-7890-abcd-ef1234567890");
 
     c.routes(
-      handlesEvent(AccountOpenedSchema),
-      handlesEvent(AccountCreditedSchema),
-      handlesEvent(AccountDebitedSchema),
+      handlesEvent(AccountOpened),
+      handlesEvent(AccountCredited),
+      handlesEvent(AccountDebited),
     );
   },
 
@@ -84,7 +84,7 @@ export const LedgerProjectionHandler: MessageHandler = {
     const e = m as DomainEvent;
 
     switch (e.$typeName) {
-      case AccountOpenedSchema.typeName: {
+      case AccountOpened.typeName: {
         const stmt = tx.prepare(`
           INSERT INTO accounts (
             id,
@@ -100,7 +100,7 @@ export const LedgerProjectionHandler: MessageHandler = {
         return;
       }
 
-      case AccountCreditedSchema.typeName: {
+      case AccountCredited.typeName: {
         const updateStmt = tx.prepare(`
           UPDATE accounts SET
             balance = balance + ?
@@ -159,7 +159,7 @@ export const LedgerProjectionHandler: MessageHandler = {
         return;
       }
 
-      case AccountDebitedSchema.typeName: {
+      case AccountDebited.typeName: {
         const updateStmt = tx.prepare(`
           UPDATE accounts SET
             balance = balance - ?
