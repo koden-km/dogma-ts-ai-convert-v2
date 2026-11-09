@@ -5,16 +5,24 @@ import type { DatabaseSync } from "node:sqlite";
 import {
   backgroundContext,
   type CommandExecutor,
+  create,
   EventObserverNotSatisfiedError,
   withEventObserver,
 } from "@/dogma/index.ts";
 import {
-  CommandName,
-  createCommand,
-  EventName,
+  DepositApprovedSchema,
+  DepositSchema,
   formatAmount,
-  type TransferDeclined,
-  type WithdrawalDeclined,
+  formatDebitFailureReason,
+  OpenAccountForNewCustomerSchema,
+  OpenAccountSchema,
+  TransferApprovedSchema,
+  TransferDeclinedSchema,
+  TransferFailedSchema,
+  TransferSchema,
+  WithdrawalApprovedSchema,
+  WithdrawalDeclinedSchema,
+  WithdrawSchema,
 } from "@/example/messages/index.ts";
 
 export type UIHandlerConfig = {
@@ -1248,10 +1256,10 @@ ${errHtml}
 
         await commandExecutor.executeCommand(
           backgroundContext(),
-          createCommand(CommandName.OpenAccountForNewCustomer, {
-            customerID,
+          create(OpenAccountForNewCustomerSchema, {
+            customerId: customerID,
             customerName,
-            accountID,
+            accountId: accountID,
             accountName,
           }),
         );
@@ -1316,9 +1324,9 @@ ${errHtml}
           const accountID = generateAccountID();
           await commandExecutor.executeCommand(
             backgroundContext(),
-            createCommand(CommandName.OpenAccount, {
-              customerID,
-              accountID,
+            create(OpenAccountSchema, {
+              customerId: customerID,
+              accountId: accountID,
               accountName,
             }),
           );
@@ -1425,12 +1433,12 @@ ${errHtml}
             try {
               await commandExecutor.executeCommand(
                 backgroundContext(),
-                createCommand(CommandName.Deposit, {
-                  transactionID: randomUUID(),
-                  accountID,
+                create(DepositSchema, {
+                  transactionId: randomUUID(),
+                  accountId: accountID,
                   amount,
                 }),
-                withEventObserver(EventName.DepositApproved, () => true),
+                withEventObserver(DepositApprovedSchema, () => true),
               );
             } catch (err) {
               if (!(err instanceof EventObserverNotSatisfiedError)) {
@@ -1461,20 +1469,17 @@ ${errHtml}
             try {
               await commandExecutor.executeCommand(
                 backgroundContext(),
-                createCommand(CommandName.Withdraw, {
-                  transactionID: randomUUID(),
-                  accountID,
+                create(WithdrawSchema, {
+                  transactionId: randomUUID(),
+                  accountId: accountID,
                   amount,
-                  scheduledTime,
+                  scheduledTime: scheduledTime.toISOString(),
                 }),
-                withEventObserver(EventName.WithdrawalApproved, () => true),
-                withEventObserver<WithdrawalDeclined>(
-                  EventName.WithdrawalDeclined,
-                  (_ctx, e) => {
-                    formError = `Withdrawal declined — ${e.data.reason}.`;
-                    return true;
-                  },
-                ),
+                withEventObserver(WithdrawalApprovedSchema, () => true),
+                withEventObserver(WithdrawalDeclinedSchema, (_ctx, e) => {
+                  formError = `Withdrawal declined — ${formatDebitFailureReason(e.reason)}.`;
+                  return true;
+                }),
               );
             } catch (err) {
               if (!(err instanceof EventObserverNotSatisfiedError)) {
@@ -1526,23 +1531,20 @@ ${errHtml}
             try {
               await commandExecutor.executeCommand(
                 backgroundContext(),
-                createCommand(CommandName.Transfer, {
-                  transactionID: randomUUID(),
-                  fromAccountID: accountID,
-                  toAccountID,
+                create(TransferSchema, {
+                  transactionId: randomUUID(),
+                  fromAccountId: accountID,
+                  toAccountId: toAccountID,
                   amount,
                   toThirdPartyBank: false,
-                  scheduledTime,
+                  scheduledTime: scheduledTime.toISOString(),
                 }),
-                withEventObserver(EventName.TransferApproved, () => true),
-                withEventObserver<TransferDeclined>(
-                  EventName.TransferDeclined,
-                  (_ctx, e) => {
-                    formError = `Transfer declined — ${e.data.reason}.`;
-                    return true;
-                  },
-                ),
-                withEventObserver(EventName.TransferFailed, () => {
+                withEventObserver(TransferApprovedSchema, () => true),
+                withEventObserver(TransferDeclinedSchema, (_ctx, e) => {
+                  formError = `Transfer declined — ${formatDebitFailureReason(e.reason)}.`;
+                  return true;
+                }),
+                withEventObserver(TransferFailedSchema, () => {
                   formError = "Transfer failed.";
                   return true;
                 }),

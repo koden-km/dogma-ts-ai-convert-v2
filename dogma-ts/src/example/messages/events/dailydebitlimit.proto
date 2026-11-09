@@ -1,0 +1,30 @@
+edition = "2024";
+package dogma.example.messages.events.v1;
+
+option features.field_presence = IMPLICIT;
+
+import "src/example/messages/transaction.proto";
+
+// DailyDebitLimitConsumed is an event that indicates an amount of an account
+// daily debit limit has been consumed.
+message DailyDebitLimitConsumed {
+  string transaction_id = 1;
+  string account_id = 2;
+  dogma.example.messages.v1.TransactionType debit_type = 3;
+  int64 amount = 4;
+  string date = 5;
+  int64 total_debits_for_day = 6;
+  int64 daily_limit = 7;
+}
+
+// DailyDebitLimitExceeded is an event that indicates an attempt to consume from
+// an account daily debit limit has been rejected due to reaching the limit.
+message DailyDebitLimitExceeded {
+  string transaction_id = 1;
+  string account_id = 2;
+  dogma.example.messages.v1.TransactionType debit_type = 3;
+  int64 amount = 4;
+  string date = 5;
+  int64 total_debits_for_day = 6;
+  int64 daily_limit = 7;
+}

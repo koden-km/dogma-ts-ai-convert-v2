@@ -18,7 +18,7 @@ describe("message-type-registry", () => {
 
   describe("registeredMessageTypeFor", () => {
     it("returns the type that represents T", () => {
-      type T = Command & { name: "TestCommand" };
+      type T = Command<"TestCommand">;
       registerCommand<T>("TestCommand", "2d8ce56f-1983-44e3-a55d-f74d8dcb0adc");
 
       const mt = registeredMessageTypeFor("TestCommand");
@@ -35,17 +35,17 @@ describe("message-type-registry", () => {
 
   describe("registeredMessageTypeOf", () => {
     it("returns the type that represents the message's type", () => {
-      type T = Command & { name: "TestCommand" };
+      type T = Command<"TestCommand">;
       registerCommand<T>("TestCommand", "5e1c3f4a-2f4b-4c3e-8f7a-1c2d3e4f5a6b");
 
-      const m: Message = { type: "command", name: "TestCommand" };
+      const m: Message = { $typeName: "TestCommand" };
       const mt = registeredMessageTypeOf(m);
       expect(mt).toBeDefined();
       expect(mt?.name).toBe("TestCommand");
     });
 
     it("returns undefined when the message's type is not in the registry", () => {
-      const m: Message = { type: "command", name: "Unknown" };
+      const m: Message = { $typeName: "Unknown" };
       const mt = registeredMessageTypeOf(m);
       expect(mt).toBeUndefined();
     });
@@ -60,7 +60,7 @@ describe("message-type-registry", () => {
   describe("registeredMessageTypeByID", () => {
     it("returns the type associated with the normalized ID", () => {
       const id = "37264B0D-4342-4708-8263-60D82DE78AD1";
-      type T = Event & { name: "TestEvent" };
+      type T = Event<"TestEvent">;
       registerEvent<T>("TestEvent", id);
 
       const mt = registeredMessageTypeByID(id);
@@ -84,9 +84,9 @@ describe("message-type-registry", () => {
 
   describe("registeredMessageTypes", () => {
     it("yields the registered message types", () => {
-      type T = Command & { name: "CmdT" };
-      type U = Event & { name: "EvtU" };
-      type V = Deadline & { name: "DlnV" };
+      type T = Command<"CmdT">;
+      type U = Event<"EvtU">;
+      type V = Deadline<"DlnV">;
 
       registerCommand<T>("CmdT", "b3160ff8-f19a-4f79-b81c-0551c99aeac2");
       registerEvent<U>("EvtU", "c3f856ba-0519-4335-ad84-313aa0fedc5e");

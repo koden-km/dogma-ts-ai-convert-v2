@@ -1,52 +1,37 @@
-import {
-  type Command,
-  defineCommands,
-  InvalidMessageError,
-} from "@/dogma/message.ts";
+import { InvalidMessageError, registerCommand } from "@/dogma/message.ts";
 import { formatAmount } from "../format.ts";
 import { isValidDate } from "../internal/validation/validation.ts";
 import {
+  formatTransactionType,
   isDebit,
   isValidTransactionType,
-  type TransactionType,
 } from "../transaction.ts";
+import {
+  type ConsumeDailyDebitLimit,
+  ConsumeDailyDebitLimitSchema,
+} from "./daily-debit-limit_pb.ts";
 
-export const CommandName = {
-  ConsumeDailyDebitLimit: "ConsumeDailyDebitLimit",
-} as const;
-
-// ConsumeDailyDebitLimit is a command requesting that an amount of an account
-// daily debit limit be consumed.
-export type ConsumeDailyDebitLimit = Command & {
-  name: typeof CommandName.ConsumeDailyDebitLimit;
-  data: {
-    transactionID: string;
-    accountID: string;
-    debitType: TransactionType;
-    amount: bigint;
-    date: string;
-  };
-};
+export { type ConsumeDailyDebitLimit, ConsumeDailyDebitLimitSchema };
 
 export type DomainCommand = ConsumeDailyDebitLimit;
 
-export const { messageCreators, messageValidators, messageDescribers } =
-  defineCommands<DomainCommand>([
-    [
-      CommandName.ConsumeDailyDebitLimit,
-      "d86ca816-6333-4b78-a1d3-9368b3adcf65",
-      validateConsumeDailyDebitLimit,
-      describeConsumeDailyDebitLimit,
-    ],
-  ]);
+registerCommand(
+  ConsumeDailyDebitLimitSchema,
+  "d86ca816-6333-4b78-a1d3-9368b3adcf65",
+  {
+    validate: validateConsumeDailyDebitLimit,
+    describe: describeConsumeDailyDebitLimit,
+    allowIdempotent: true,
+  },
+);
 
-function validateConsumeDailyDebitLimit({ data: m }: ConsumeDailyDebitLimit) {
-  if (m.transactionID === "") {
+function validateConsumeDailyDebitLimit(m: ConsumeDailyDebitLimit) {
+  if (m.transactionId === "") {
     throw new InvalidMessageError(
       "ConsumeDailyDebitLimit must not have an empty transaction ID",
     );
   }
-  if (m.accountID === "") {
+  if (m.accountId === "") {
     throw new InvalidMessageError(
       "ConsumeDailyDebitLimit must not have an empty account ID",
     );
@@ -73,6 +58,6 @@ function validateConsumeDailyDebitLimit({ data: m }: ConsumeDailyDebitLimit) {
   }
 }
 
-function describeConsumeDailyDebitLimit({ data: m }: ConsumeDailyDebitLimit) {
-  return `${m.debitType} ${m.transactionID}: consuming ${formatAmount(m.amount)} from ${m.date} daily debit limit of account ${m.accountID}`;
+function describeConsumeDailyDebitLimit(m: ConsumeDailyDebitLimit) {
+  return `${formatTransactionType(m.debitType)} ${m.transactionId}: consuming ${formatAmount(m.amount)} from ${m.date} daily debit limit of account ${m.accountId}`;
 }

@@ -1,3 +1,4 @@
+import type { GenMessage } from "@bufbuild/protobuf/codegenv2";
 import {
   type Message,
   registeredMessageTypeFor,
@@ -69,7 +70,12 @@ export function kindOf(m: Message): Kind {
   if (!m || typeof m !== "object") {
     throw new Error("message cannot be null or undefined");
   }
-  switch (m.type) {
+  const reg = registeredMessageTypeOf(m);
+  if (reg) {
+    return reg.kind;
+  }
+  const explicitKind = (m as any).$kind;
+  switch (explicitKind) {
     case "command":
       return CommandKind;
     case "event":
@@ -87,7 +93,7 @@ export type Name = string;
 
 export function nameOf(m: Message): Name {
   kindOf(m);
-  return m.name;
+  return m.$typeName;
 }
 
 // Type represents a Dogma message type.
@@ -118,14 +124,24 @@ function getOrCreateType(name: string, kind: Kind, id?: string): Type {
   return t;
 }
 
-export function typeFromRegistered(mt: RegisteredMessageType): Type {
+export function typeFromRegistered(mt: RegisteredMessageType<any>): Type {
   return getOrCreateType(mt.name, mt.kind, mt.id);
 }
 
 export function typeFor(
-  nameOrType: string | RegisteredMessageType | Type,
+  nameOrType: string | RegisteredMessageType<any> | Type | GenMessage<any>,
   fallbackKind?: Kind,
 ): Type {
+  if (typeof nameOrType === "object" && "typeName" in nameOrType) {
+    const reg = registeredMessageTypeFor(nameOrType);
+    if (reg) {
+      return typeFromRegistered(reg);
+    }
+    if (fallbackKind) {
+      return getOrCreateType(nameOrType.typeName, fallbackKind);
+    }
+    throw new Error(`${nameOrType.typeName} is not in the message type registry`);
+  }
   if (typeof nameOrType === "object" && !("create" in nameOrType)) {
     return nameOrType;
   }
@@ -148,5 +164,5 @@ export function typeOf(m: Message): Type {
   if (reg) {
     return typeFromRegistered(reg);
   }
-  return getOrCreateType(m.name, k);
+  return getOrCreateType(m.$typeName, k);
 }

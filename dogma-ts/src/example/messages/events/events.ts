@@ -1,11 +1,7 @@
 import {
-  createMessageCreator,
-  createMessageDescriber,
-  createMessageValidator,
+  describeMessage,
   type EventValidationScope,
-  type MessageCreators,
-  type MessageDescribers,
-  type MessageValidators,
+  validateMessage,
 } from "@/dogma/message.ts";
 import * as account from "./account.ts";
 import * as customer from "./customer.ts";
@@ -15,43 +11,56 @@ import * as thirdPartyCredit from "./third-party-credit.ts";
 import * as transfer from "./transfer.ts";
 import * as withdrawal from "./withdrawal.ts";
 
-export type {
-  AccountCredited,
-  AccountDebitDeclined,
-  AccountDebited,
-  AccountOpened,
+export {
+  type AccountCredited,
+  AccountCreditedSchema,
+  type AccountDebitDeclined,
+  AccountDebitDeclinedSchema,
+  type AccountDebited,
+  AccountDebitedSchema,
+  type AccountOpened,
+  AccountOpenedSchema,
 } from "./account.ts";
-export type { CustomerAcquired } from "./customer.ts";
-export type {
-  DailyDebitLimitConsumed,
-  DailyDebitLimitExceeded,
+export {
+  type CustomerAcquired,
+  CustomerAcquiredSchema,
+} from "./customer.ts";
+export {
+  type DailyDebitLimitConsumed,
+  DailyDebitLimitConsumedSchema,
+  type DailyDebitLimitExceeded,
+  DailyDebitLimitExceededSchema,
 } from "./dailydebitlimit.ts";
-export type { DepositApproved, DepositStarted } from "./deposit.ts";
-export type {
-  ThirdPartyAccountCredited,
-  ThirdPartyAccountCreditFailed,
+export {
+  type DepositApproved,
+  DepositApprovedSchema,
+  type DepositStarted,
+  DepositStartedSchema,
+} from "./deposit.ts";
+export {
+  type ThirdPartyAccountCredited,
+  ThirdPartyAccountCreditedSchema,
+  type ThirdPartyAccountCreditFailed,
+  ThirdPartyAccountCreditFailedSchema,
 } from "./third-party-credit.ts";
-export type {
-  TransferApproved,
-  TransferDeclined,
-  TransferFailed,
-  TransferStarted,
+export {
+  type TransferApproved,
+  TransferApprovedSchema,
+  type TransferDeclined,
+  TransferDeclinedSchema,
+  type TransferFailed,
+  TransferFailedSchema,
+  type TransferStarted,
+  TransferStartedSchema,
 } from "./transfer.ts";
-export type {
-  WithdrawalApproved,
-  WithdrawalDeclined,
-  WithdrawalStarted,
+export {
+  type WithdrawalApproved,
+  WithdrawalApprovedSchema,
+  type WithdrawalDeclined,
+  WithdrawalDeclinedSchema,
+  type WithdrawalStarted,
+  WithdrawalStartedSchema,
 } from "./withdrawal.ts";
-
-export const EventName = {
-  ...account.EventName,
-  ...customer.EventName,
-  ...dailyDebitLimit.EventName,
-  ...deposit.EventName,
-  ...transfer.EventName,
-  ...withdrawal.EventName,
-  ...thirdPartyCredit.EventName,
-} as const;
 
 export type DomainEvent =
   | account.DomainEvent
@@ -62,41 +71,13 @@ export type DomainEvent =
   | withdrawal.DomainEvent
   | thirdPartyCredit.DomainEvent;
 
-const messageCreators: MessageCreators<DomainEvent> = {
-  ...account.messageCreators,
-  ...customer.messageCreators,
-  ...dailyDebitLimit.messageCreators,
-  ...deposit.messageCreators,
-  ...transfer.messageCreators,
-  ...withdrawal.messageCreators,
-  ...thirdPartyCredit.messageCreators,
-};
+export function validateEvent(
+  msg: DomainEvent,
+  scope?: EventValidationScope,
+): void {
+  validateMessage(msg, scope);
+}
 
-const messageValidators: MessageValidators<DomainEvent, EventValidationScope> =
-  {
-  ...account.messageValidators,
-  ...customer.messageValidators,
-  ...dailyDebitLimit.messageValidators,
-  ...deposit.messageValidators,
-  ...transfer.messageValidators,
-  ...withdrawal.messageValidators,
-  ...thirdPartyCredit.messageValidators,
-};
-
-const messageDescribers: MessageDescribers<DomainEvent> = {
-  ...account.messageDescribers,
-  ...customer.messageDescribers,
-  ...dailyDebitLimit.messageDescribers,
-  ...deposit.messageDescribers,
-  ...transfer.messageDescribers,
-  ...withdrawal.messageDescribers,
-  ...thirdPartyCredit.messageDescribers,
-};
-
-export const createEvent = createMessageCreator(messageCreators, "event");
-
-export const validateEvent: (msg: DomainEvent) => void =
-  createMessageValidator(messageValidators);
-
-export const describeEvent: (msg: DomainEvent) => string =
-  createMessageDescriber(messageDescribers);
+export function describeEvent(msg: DomainEvent): string {
+  return describeMessage(msg);
+}

@@ -4,22 +4,27 @@ import {
   type AggregateMessageHandler,
   type AggregateRoot,
   type Command,
+  create,
   type Event,
   handlesCommand,
   recordsEvent,
   UnexpectedMessageError,
 } from "@/dogma/index.ts";
 import {
-  CommandName,
+  AccountCreditedSchema,
+  AccountDebitDeclinedSchema,
+  AccountDebitedSchema,
+  AccountOpenedSchema,
   type CreditAccount,
-  createEvent,
+  CreditAccountSchema,
   type DebitAccount,
+  DebitAccountSchema,
   DebitFailureReason,
   type DomainCommand,
   type DomainEvent,
-  EventName,
   formatAmount,
   type OpenAccount,
+  OpenAccountSchema,
 } from "../messages/index.ts";
 
 // Account is the aggregate root for a bank account.
@@ -40,13 +45,13 @@ export const AccountHandler: AggregateMessageHandler<Account> = {
     c.identity("account", "fcce9a78-23a3-4211-b608-ecbe21ea446f");
 
     c.routes(
-      handlesCommand<OpenAccount>(CommandName.OpenAccount),
-      handlesCommand<CreditAccount>(CommandName.CreditAccount),
-      handlesCommand<DebitAccount>(CommandName.DebitAccount),
-      recordsEvent(EventName.AccountOpened),
-      recordsEvent(EventName.AccountCredited),
-      recordsEvent(EventName.AccountDebited),
-      recordsEvent(EventName.AccountDebitDeclined),
+      handlesCommand(OpenAccountSchema),
+      handlesCommand(CreditAccountSchema),
+      handlesCommand(DebitAccountSchema),
+      recordsEvent(AccountOpenedSchema),
+      recordsEvent(AccountCreditedSchema),
+      recordsEvent(AccountDebitedSchema),
+      recordsEvent(AccountDebitDeclinedSchema),
     );
   },
 
@@ -66,15 +71,15 @@ export const AccountHandler: AggregateMessageHandler<Account> = {
 
   applyEvent(r: Account, e: Event): void {
     const m = e as DomainEvent;
-    switch (m.name) {
-      case EventName.AccountOpened:
-        r.name = m.data.accountName;
+    switch (m.$typeName) {
+      case AccountOpenedSchema.typeName:
+        r.name = m.accountName;
         break;
-      case EventName.AccountCredited:
-        r.balance += m.data.amount;
+      case AccountCreditedSchema.typeName:
+        r.balance += m.amount;
         break;
-      case EventName.AccountDebited:
-        r.balance -= m.data.amount;
+      case AccountDebitedSchema.typeName:
+        r.balance -= m.amount;
         break;
     }
   },
@@ -96,13 +101,13 @@ export const AccountHandler: AggregateMessageHandler<Account> = {
 
   routeCommandToInstance(c: Command): string {
     const m = c as DomainCommand;
-    switch (m.name) {
-      case CommandName.OpenAccount:
-        return m.data.accountID;
-      case CommandName.CreditAccount:
-        return m.data.accountID;
-      case CommandName.DebitAccount:
-        return m.data.accountID;
+    switch (m.$typeName) {
+      case OpenAccountSchema.typeName:
+        return m.accountId;
+      case CreditAccountSchema.typeName:
+        return m.accountId;
+      case DebitAccountSchema.typeName:
+        return m.accountId;
       default:
         throw new UnexpectedMessageError();
     }
@@ -114,12 +119,12 @@ export const AccountHandler: AggregateMessageHandler<Account> = {
     c: Command,
   ): void {
     const m = c as DomainCommand;
-    switch (m.name) {
-      case CommandName.OpenAccount:
+    switch (m.$typeName) {
+      case OpenAccountSchema.typeName:
         return openAccount(r, s, m);
-      case CommandName.CreditAccount:
+      case CreditAccountSchema.typeName:
         return creditAccount(r, s, m);
-      case CommandName.DebitAccount:
+      case DebitAccountSchema.typeName:
         return debitAccount(r, s, m);
       default:
         throw new UnexpectedMessageError();
@@ -130,7 +135,7 @@ export const AccountHandler: AggregateMessageHandler<Account> = {
 function openAccount(
   r: Account,
   s: AggregateCommandScope<Account>,
-  { data: m }: OpenAccount,
+  m: OpenAccount,
 ) {
   if (r.name !== "") {
     s.log("account has already been opened");
@@ -138,9 +143,9 @@ function openAccount(
   }
 
   s.recordEvent(
-    createEvent(EventName.AccountOpened, {
-      customerID: m.customerID,
-      accountID: m.accountID,
+    create(AccountOpenedSchema, {
+      customerId: m.customerId,
+      accountId: m.accountId,
       accountName: m.accountName,
     }),
   );
@@ -149,12 +154,12 @@ function openAccount(
 function creditAccount(
   _r: Account,
   s: AggregateCommandScope<Account>,
-  { data: m }: CreditAccount,
+  m: CreditAccount,
 ) {
   s.recordEvent(
-    createEvent(EventName.AccountCredited, {
-      transactionID: m.transactionID,
-      accountID: m.accountID,
+    create(AccountCreditedSchema, {
+      transactionId: m.transactionId,
+      accountId: m.accountId,
       transactionType: m.transactionType,
       amount: m.amount,
     }),
@@ -164,13 +169,13 @@ function creditAccount(
 function debitAccount(
   r: Account,
   s: AggregateCommandScope<Account>,
-  { data: m }: DebitAccount,
+  m: DebitAccount,
 ) {
   if (hasSufficientFunds(r, m.amount)) {
     s.recordEvent(
-      createEvent(EventName.AccountDebited, {
-        transactionID: m.transactionID,
-        accountID: m.accountID,
+      create(AccountDebitedSchema, {
+        transactionId: m.transactionId,
+        accountId: m.accountId,
         transactionType: m.transactionType,
         amount: m.amount,
         scheduledTime: m.scheduledTime,
@@ -178,12 +183,12 @@ function debitAccount(
     );
   } else {
     s.recordEvent(
-      createEvent(EventName.AccountDebitDeclined, {
-        transactionID: m.transactionID,
-        accountID: m.accountID,
+      create(AccountDebitDeclinedSchema, {
+        transactionId: m.transactionId,
+        accountId: m.accountId,
         transactionType: m.transactionType,
         amount: m.amount,
-        reason: DebitFailureReason.InsufficientFunds,
+        reason: DebitFailureReason.INSUFFICIENT_FUNDS,
       }),
     );
   }

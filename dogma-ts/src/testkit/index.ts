@@ -1,4 +1,5 @@
 import util from "node:util";
+import type { GenMessage } from "@bufbuild/protobuf/codegenv2";
 import {
   type Application as DogmaApplication,
   backgroundContext,
@@ -13,8 +14,9 @@ import {
 } from "@/dogma/index.ts";
 
 export type MessageTypeSpec<M extends Message = Message> =
-  | M["name"]
-  | RegisteredMessageType
+  | GenMessage<M>
+  | M["$typeName"]
+  | RegisteredMessageType<any>
   | Type;
 import {
   AggregateHandlerType,
@@ -276,8 +278,7 @@ function createTestCommandExecutor(): TestCommandExecutor {
       if (
         commandOrOpt &&
         typeof commandOrOpt === "object" &&
-        "type" in commandOrOpt &&
-        (commandOrOpt as any).type === "command"
+        "$typeName" in commandOrOpt
       ) {
         ctx = ctxOrCommand as Context;
         m = commandOrOpt as Command;
@@ -1111,7 +1112,7 @@ function resolveTypeSpec<T extends Message>(
   if (!arg) {
     throw new Error(`${funcName}(<nil>): message or type must not be nil`);
   }
-  if (typeof arg === "object" && "type" in arg && "name" in arg) {
+  if (typeof arg === "object" && "$typeName" in arg) {
     return typeOf(arg as T);
   }
   return typeFor(arg as MessageTypeSpec<T>);

@@ -55,8 +55,8 @@ describe("executor", () => {
         return true;
       });
 
-      const matchEvt: Event = { type: "event", name: "EvtT" };
-      const otherEvt: Event = { type: "event", name: "Other" };
+      const matchEvt: Event = { $typeName: "EvtT" };
+      const otherEvt: Event = { $typeName: "Other" };
 
       expect(await o.observer(backgroundContext(), otherEvt)).toBe(false);
       expect(called).toBe(false);

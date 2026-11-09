@@ -4,6 +4,7 @@ import {
   type AggregateMessageHandler,
   type AggregateRoot,
   type Command,
+  create,
   type Event,
   handlesCommand,
   NoSnapshotBehavior,
@@ -11,12 +12,28 @@ import {
   UnexpectedMessageError,
 } from "@/dogma/index.ts";
 import {
-  CommandName,
-  createEvent,
+  ApproveDepositSchema,
+  ApproveTransferSchema,
+  ApproveWithdrawalSchema,
+  DeclineTransferSchema,
+  DeclineWithdrawalSchema,
+  DepositApprovedSchema,
+  DepositSchema,
+  DepositStartedSchema,
   type DomainCommand,
   type DomainEvent,
-  EventName,
   formatAmount,
+  formatDebitFailureReason,
+  MarkTransferAsFailedSchema,
+  TransferApprovedSchema,
+  TransferDeclinedSchema,
+  TransferFailedSchema,
+  TransferSchema,
+  TransferStartedSchema,
+  WithdrawalApprovedSchema,
+  WithdrawalDeclinedSchema,
+  WithdrawalStartedSchema,
+  WithdrawSchema,
 } from "../messages/index.ts";
 
 // Transaction is the aggregate root for a bank transaction.
@@ -37,24 +54,24 @@ export const TransactionHandler: AggregateMessageHandler<Transaction> = {
     c.identity("transaction", "2afe7484-8eb4-4c02-9c39-c2493e0defb0");
 
     c.routes(
-      handlesCommand(CommandName.Deposit),
-      handlesCommand(CommandName.ApproveDeposit),
-      handlesCommand(CommandName.Withdraw),
-      handlesCommand(CommandName.ApproveWithdrawal),
-      handlesCommand(CommandName.DeclineWithdrawal),
-      handlesCommand(CommandName.Transfer),
-      handlesCommand(CommandName.ApproveTransfer),
-      handlesCommand(CommandName.DeclineTransfer),
-      handlesCommand(CommandName.MarkTransferAsFailed),
-      recordsEvent(EventName.DepositStarted),
-      recordsEvent(EventName.DepositApproved),
-      recordsEvent(EventName.WithdrawalStarted),
-      recordsEvent(EventName.WithdrawalApproved),
-      recordsEvent(EventName.WithdrawalDeclined),
-      recordsEvent(EventName.TransferStarted),
-      recordsEvent(EventName.TransferApproved),
-      recordsEvent(EventName.TransferDeclined),
-      recordsEvent(EventName.TransferFailed),
+      handlesCommand(DepositSchema),
+      handlesCommand(ApproveDepositSchema),
+      handlesCommand(WithdrawSchema),
+      handlesCommand(ApproveWithdrawalSchema),
+      handlesCommand(DeclineWithdrawalSchema),
+      handlesCommand(TransferSchema),
+      handlesCommand(ApproveTransferSchema),
+      handlesCommand(DeclineTransferSchema),
+      handlesCommand(MarkTransferAsFailedSchema),
+      recordsEvent(DepositStartedSchema),
+      recordsEvent(DepositApprovedSchema),
+      recordsEvent(WithdrawalStartedSchema),
+      recordsEvent(WithdrawalApprovedSchema),
+      recordsEvent(WithdrawalDeclinedSchema),
+      recordsEvent(TransferStartedSchema),
+      recordsEvent(TransferApprovedSchema),
+      recordsEvent(TransferDeclinedSchema),
+      recordsEvent(TransferFailedSchema),
     );
   },
 
@@ -75,40 +92,40 @@ export const TransactionHandler: AggregateMessageHandler<Transaction> = {
 
   applyEvent(r: Transaction, e: Event): void {
     const m = e as DomainEvent;
-    switch (m.name) {
-      case EventName.DepositStarted:
+    switch (m.$typeName) {
+      case DepositStartedSchema.typeName:
         r.type = "deposit";
-        r.amount = m.data.amount;
+        r.amount = m.amount;
         r.status = "pending";
         break;
-      case EventName.DepositApproved:
+      case DepositApprovedSchema.typeName:
         r.status = "approved";
         break;
 
-      case EventName.WithdrawalStarted:
+      case WithdrawalStartedSchema.typeName:
         r.type = "withdrawal";
-        r.amount = m.data.amount;
+        r.amount = m.amount;
         r.status = "pending";
         break;
-      case EventName.WithdrawalApproved:
+      case WithdrawalApprovedSchema.typeName:
         r.status = "approved";
         break;
-      case EventName.WithdrawalDeclined:
-        r.status = `declined: ${m.data.reason}`;
+      case WithdrawalDeclinedSchema.typeName:
+        r.status = `declined: ${formatDebitFailureReason(m.reason)}`;
         break;
 
-      case EventName.TransferStarted:
+      case TransferStartedSchema.typeName:
         r.type = "transfer";
-        r.amount = m.data.amount;
+        r.amount = m.amount;
         r.status = "pending";
         break;
-      case EventName.TransferApproved:
+      case TransferApprovedSchema.typeName:
         r.status = "approved";
         break;
-      case EventName.TransferDeclined:
-        r.status = `declined: ${m.data.reason}`;
+      case TransferDeclinedSchema.typeName:
+        r.status = `declined: ${formatDebitFailureReason(m.reason)}`;
         break;
-      case EventName.TransferFailed:
+      case TransferFailedSchema.typeName:
         r.status = "failed";
         break;
     }
@@ -116,17 +133,17 @@ export const TransactionHandler: AggregateMessageHandler<Transaction> = {
 
   routeCommandToInstance(c: Command): string {
     const m = c as DomainCommand;
-    switch (m.name) {
-      case CommandName.Deposit:
-      case CommandName.ApproveDeposit:
-      case CommandName.Withdraw:
-      case CommandName.ApproveWithdrawal:
-      case CommandName.DeclineWithdrawal:
-      case CommandName.Transfer:
-      case CommandName.ApproveTransfer:
-      case CommandName.DeclineTransfer:
-      case CommandName.MarkTransferAsFailed:
-        return m.data.transactionID;
+    switch (m.$typeName) {
+      case DepositSchema.typeName:
+      case ApproveDepositSchema.typeName:
+      case WithdrawSchema.typeName:
+      case ApproveWithdrawalSchema.typeName:
+      case DeclineWithdrawalSchema.typeName:
+      case TransferSchema.typeName:
+      case ApproveTransferSchema.typeName:
+      case DeclineTransferSchema.typeName:
+      case MarkTransferAsFailedSchema.typeName:
+        return m.transactionId;
       default:
         throw new UnexpectedMessageError();
     }
@@ -138,118 +155,118 @@ export const TransactionHandler: AggregateMessageHandler<Transaction> = {
     c: Command,
   ): void {
     const m = c as DomainCommand;
-    switch (m.name) {
-      case CommandName.Deposit:
+    switch (m.$typeName) {
+      case DepositSchema.typeName:
         if (r.status !== "") {
           s.log("transaction already started");
           return;
         }
         s.recordEvent(
-          createEvent(EventName.DepositStarted, {
-            transactionID: m.data.transactionID,
-            accountID: m.data.accountID,
-            amount: m.data.amount,
+          create(DepositStartedSchema, {
+            transactionId: m.transactionId,
+            accountId: m.accountId,
+            amount: m.amount,
           }),
         );
         return;
 
-      case CommandName.ApproveDeposit:
+      case ApproveDepositSchema.typeName:
         s.recordEvent(
-          createEvent(EventName.DepositApproved, {
-            transactionID: m.data.transactionID,
-            accountID: m.data.accountID,
-            amount: m.data.amount,
+          create(DepositApprovedSchema, {
+            transactionId: m.transactionId,
+            accountId: m.accountId,
+            amount: m.amount,
           }),
         );
         return;
 
-      case CommandName.Withdraw:
+      case WithdrawSchema.typeName:
         if (r.status !== "") {
           s.log("transaction already started");
           return;
         }
         s.recordEvent(
-          createEvent(EventName.WithdrawalStarted, {
-            transactionID: m.data.transactionID,
-            accountID: m.data.accountID,
-            amount: m.data.amount,
-            scheduledTime: m.data.scheduledTime,
+          create(WithdrawalStartedSchema, {
+            transactionId: m.transactionId,
+            accountId: m.accountId,
+            amount: m.amount,
+            scheduledTime: m.scheduledTime,
           }),
         );
         return;
 
-      case CommandName.ApproveWithdrawal:
+      case ApproveWithdrawalSchema.typeName:
         s.recordEvent(
-          createEvent(EventName.WithdrawalApproved, {
-            transactionID: m.data.transactionID,
-            accountID: m.data.accountID,
-            amount: m.data.amount,
+          create(WithdrawalApprovedSchema, {
+            transactionId: m.transactionId,
+            accountId: m.accountId,
+            amount: m.amount,
           }),
         );
         return;
 
-      case CommandName.DeclineWithdrawal:
+      case DeclineWithdrawalSchema.typeName:
         s.recordEvent(
-          createEvent(EventName.WithdrawalDeclined, {
-            transactionID: m.data.transactionID,
-            accountID: m.data.accountID,
-            amount: m.data.amount,
-            reason: m.data.reason,
+          create(WithdrawalDeclinedSchema, {
+            transactionId: m.transactionId,
+            accountId: m.accountId,
+            amount: m.amount,
+            reason: m.reason,
           }),
         );
         return;
 
-      case CommandName.Transfer:
+      case TransferSchema.typeName:
         if (r.status !== "") {
           s.log("transaction already started");
           return;
         }
-        if (m.data.fromAccountID === m.data.toAccountID) {
+        if (m.fromAccountId === m.toAccountId) {
           s.log("cannot transfer to same account");
           return;
         }
         s.recordEvent(
-          createEvent(EventName.TransferStarted, {
-            transactionID: m.data.transactionID,
-            fromAccountID: m.data.fromAccountID,
-            toAccountID: m.data.toAccountID,
-            toThirdPartyBank: m.data.toThirdPartyBank,
-            amount: m.data.amount,
-            scheduledTime: m.data.scheduledTime,
+          create(TransferStartedSchema, {
+            transactionId: m.transactionId,
+            fromAccountId: m.fromAccountId,
+            toAccountId: m.toAccountId,
+            toThirdPartyBank: m.toThirdPartyBank,
+            amount: m.amount,
+            scheduledTime: m.scheduledTime,
           }),
         );
         return;
 
-      case CommandName.ApproveTransfer:
+      case ApproveTransferSchema.typeName:
         s.recordEvent(
-          createEvent(EventName.TransferApproved, {
-            transactionID: m.data.transactionID,
-            fromAccountID: m.data.fromAccountID,
-            toAccountID: m.data.toAccountID,
-            amount: m.data.amount,
+          create(TransferApprovedSchema, {
+            transactionId: m.transactionId,
+            fromAccountId: m.fromAccountId,
+            toAccountId: m.toAccountId,
+            amount: m.amount,
           }),
         );
         return;
 
-      case CommandName.DeclineTransfer:
+      case DeclineTransferSchema.typeName:
         s.recordEvent(
-          createEvent(EventName.TransferDeclined, {
-            transactionID: m.data.transactionID,
-            fromAccountID: m.data.fromAccountID,
-            toAccountID: m.data.toAccountID,
-            amount: m.data.amount,
-            reason: m.data.reason,
+          create(TransferDeclinedSchema, {
+            transactionId: m.transactionId,
+            fromAccountId: m.fromAccountId,
+            toAccountId: m.toAccountId,
+            amount: m.amount,
+            reason: m.reason,
           }),
         );
         return;
 
-      case CommandName.MarkTransferAsFailed:
+      case MarkTransferAsFailedSchema.typeName:
         s.recordEvent(
-          createEvent(EventName.TransferFailed, {
-            transactionID: m.data.transactionID,
-            fromAccountID: m.data.fromAccountID,
-            toAccountID: m.data.toAccountID,
-            amount: m.data.amount,
+          create(TransferFailedSchema, {
+            transactionId: m.transactionId,
+            fromAccountId: m.fromAccountId,
+            toAccountId: m.toAccountId,
+            amount: m.amount,
           }),
         );
         return;

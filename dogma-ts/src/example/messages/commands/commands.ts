@@ -1,11 +1,7 @@
 import {
   type CommandValidationScope,
-  createMessageCreator,
-  createMessageDescriber,
-  createMessageValidator,
-  type MessageCreators,
-  type MessageDescribers,
-  type MessageValidators,
+  describeMessage,
+  validateMessage,
 } from "@/dogma/message.ts";
 import * as account from "./account.ts";
 import * as dailyDebitLimit from "./daily-debit-limit.ts";
@@ -14,35 +10,48 @@ import * as thirdPartyCredit from "./third-party-credit.ts";
 import * as transfer from "./transfer.ts";
 import * as withdrawal from "./withdrawal.ts";
 
-export type {
-  CreditAccount,
-  DebitAccount,
-  OpenAccount,
-  OpenAccountForNewCustomer,
+export {
+  type CreditAccount,
+  CreditAccountSchema,
+  type DebitAccount,
+  DebitAccountSchema,
+  type OpenAccount,
+  type OpenAccountForNewCustomer,
+  OpenAccountForNewCustomerSchema,
+  OpenAccountSchema,
 } from "./account.ts";
-export type { ConsumeDailyDebitLimit } from "./daily-debit-limit.ts";
-export type { ApproveDeposit, Deposit } from "./deposit.ts";
-export type { CreditThirdPartyAccount } from "./third-party-credit.ts";
-export type {
-  ApproveTransfer,
-  DeclineTransfer,
-  MarkTransferAsFailed,
-  Transfer,
+export {
+  type ConsumeDailyDebitLimit,
+  ConsumeDailyDebitLimitSchema,
+} from "./daily-debit-limit.ts";
+export {
+  type ApproveDeposit,
+  ApproveDepositSchema,
+  type Deposit,
+  DepositSchema,
+} from "./deposit.ts";
+export {
+  type CreditThirdPartyAccount,
+  CreditThirdPartyAccountSchema,
+} from "./third-party-credit.ts";
+export {
+  type ApproveTransfer,
+  ApproveTransferSchema,
+  type DeclineTransfer,
+  DeclineTransferSchema,
+  type MarkTransferAsFailed,
+  MarkTransferAsFailedSchema,
+  type Transfer,
+  TransferSchema,
 } from "./transfer.ts";
-export type {
-  ApproveWithdrawal,
-  DeclineWithdrawal,
-  Withdraw,
+export {
+  type ApproveWithdrawal,
+  ApproveWithdrawalSchema,
+  type DeclineWithdrawal,
+  DeclineWithdrawalSchema,
+  type Withdraw,
+  WithdrawSchema,
 } from "./withdrawal.ts";
-
-export const CommandName = {
-  ...account.CommandName,
-  ...dailyDebitLimit.CommandName,
-  ...deposit.CommandName,
-  ...transfer.CommandName,
-  ...withdrawal.CommandName,
-  ...thirdPartyCredit.CommandName,
-} as const;
 
 export type DomainCommand =
   | account.DomainCommand
@@ -52,40 +61,13 @@ export type DomainCommand =
   | withdrawal.DomainCommand
   | thirdPartyCredit.DomainCommand;
 
-const messageCreators: MessageCreators<DomainCommand> = {
-  ...account.messageCreators,
-  ...dailyDebitLimit.messageCreators,
-  ...deposit.messageCreators,
-  ...transfer.messageCreators,
-  ...withdrawal.messageCreators,
-  ...thirdPartyCredit.messageCreators,
-};
+export function validateCommand(
+  msg: DomainCommand,
+  scope?: CommandValidationScope,
+): void {
+  validateMessage(msg, scope);
+}
 
-const messageValidators: MessageValidators<
-  DomainCommand,
-  CommandValidationScope
-> = {
-  ...account.messageValidators,
-  ...dailyDebitLimit.messageValidators,
-  ...deposit.messageValidators,
-  ...transfer.messageValidators,
-  ...withdrawal.messageValidators,
-  ...thirdPartyCredit.messageValidators,
-};
-
-const messageDescribers: MessageDescribers<DomainCommand> = {
-  ...account.messageDescribers,
-  ...dailyDebitLimit.messageDescribers,
-  ...deposit.messageDescribers,
-  ...transfer.messageDescribers,
-  ...withdrawal.messageDescribers,
-  ...thirdPartyCredit.messageDescribers,
-};
-
-export const createCommand = createMessageCreator(messageCreators, "command");
-
-export const validateCommand: (msg: DomainCommand) => void =
-  createMessageValidator(messageValidators);
-
-export const describeCommand: (msg: DomainCommand) => string =
-  createMessageDescriber(messageDescribers);
+export function describeCommand(msg: DomainCommand): string {
+  return describeMessage(msg);
+}

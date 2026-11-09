@@ -4,6 +4,7 @@ import {
   type AggregateMessageHandler,
   type AggregateRoot,
   type Command,
+  create,
   type Event,
   handlesCommand,
   NoSnapshotBehavior,
@@ -11,12 +12,10 @@ import {
   UnexpectedMessageError,
 } from "@/dogma/index.ts";
 import {
-  CommandName,
-  createEvent,
+  CustomerAcquiredSchema,
   type DomainCommand,
   type DomainEvent,
-  EventName,
-  type OpenAccountForNewCustomer,
+  OpenAccountForNewCustomerSchema,
 } from "../messages/index.ts";
 
 // Customer is the aggregate root for a bank customer.
@@ -32,10 +31,8 @@ export const CustomerHandler: AggregateMessageHandler<Customer> = {
     c.identity("customer", "f30111d5-f100-4495-90ad-b09746ba8477");
 
     c.routes(
-      handlesCommand<OpenAccountForNewCustomer>(
-        CommandName.OpenAccountForNewCustomer,
-      ),
-      recordsEvent(EventName.CustomerAcquired),
+      handlesCommand(OpenAccountForNewCustomerSchema),
+      recordsEvent(CustomerAcquiredSchema),
     );
   },
 
@@ -51,18 +48,18 @@ export const CustomerHandler: AggregateMessageHandler<Customer> = {
 
   applyEvent(r: Customer, e: Event): void {
     const m = e as DomainEvent;
-    switch (m.name) {
-      case EventName.CustomerAcquired:
-        r.name = m.data.customerName;
+    switch (m.$typeName) {
+      case CustomerAcquiredSchema.typeName:
+        r.name = m.customerName;
         break;
     }
   },
 
   routeCommandToInstance(c: Command): string {
     const m = c as DomainCommand;
-    switch (m.name) {
-      case CommandName.OpenAccountForNewCustomer:
-        return m.data.customerID;
+    switch (m.$typeName) {
+      case OpenAccountForNewCustomerSchema.typeName:
+        return m.customerId;
       default:
         throw new UnexpectedMessageError();
     }
@@ -74,18 +71,18 @@ export const CustomerHandler: AggregateMessageHandler<Customer> = {
     c: Command,
   ): void {
     const m = c as DomainCommand;
-    switch (m.name) {
-      case CommandName.OpenAccountForNewCustomer:
+    switch (m.$typeName) {
+      case OpenAccountForNewCustomerSchema.typeName:
         if (r.name !== "") {
           s.log("customer has already been acquired");
           return;
         }
         s.recordEvent(
-          createEvent(EventName.CustomerAcquired, {
-            customerID: m.data.customerID,
-            customerName: m.data.customerName,
-            accountID: m.data.accountID,
-            accountName: m.data.accountName,
+          create(CustomerAcquiredSchema, {
+            customerId: m.customerId,
+            customerName: m.customerName,
+            accountId: m.accountId,
+            accountName: m.accountName,
           }),
         );
         return;

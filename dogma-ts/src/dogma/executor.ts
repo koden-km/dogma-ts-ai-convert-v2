@@ -1,4 +1,5 @@
 import {
+  type MessageTypeInput,
   mustRegisteredMessageTypeFor,
   type RegisteredMessageType,
 } from "./message-type-registry.ts";
@@ -61,7 +62,7 @@ export function withIdempotencyKey(key: string): IdempotencyKeyOption {
 // withEventObserver returns an [ExecuteCommandOption] that observes events of
 // type T recorded while executing a command.
 export function withEventObserver<T extends Event = Event>(
-  nameOrType: T["name"] | RegisteredMessageType,
+  nameOrType: MessageTypeInput<T>,
   fn: EventObserver<T>,
 ): EventObserverOption {
   if (!fn) {
@@ -69,7 +70,7 @@ export function withEventObserver<T extends Event = Event>(
   }
   const typ = mustRegisteredMessageTypeFor(nameOrType);
   const observer = (ctx: Context, e: Event): Promise<boolean> | boolean => {
-    if (e.name === typ.name) {
+    if (e.$typeName === typ.name) {
       return fn(ctx, e as T);
     }
     return false;

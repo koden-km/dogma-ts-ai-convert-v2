@@ -1,60 +1,40 @@
-import {
-  type Command,
-  defineCommands,
-  InvalidMessageError,
-} from "@/dogma/message.ts";
+import { InvalidMessageError, registerCommand } from "@/dogma/message.ts";
 import { formatAmount } from "../format.ts";
+import {
+  type ApproveDeposit,
+  ApproveDepositSchema,
+  type Deposit,
+  DepositSchema,
+} from "./deposit_pb.ts";
 
-export const CommandName = {
-  Deposit: "Deposit",
-  ApproveDeposit: "ApproveDeposit",
-} as const;
-
-// Deposit is a command requesting that funds be deposited into a bank account.
-export type Deposit = Command & {
-  name: typeof CommandName.Deposit;
-  data: {
-    transactionID: string;
-    accountID: string;
-    amount: bigint;
-  };
-};
-
-// ApproveDeposit is a command that approves an account deposit.
-export type ApproveDeposit = Command & {
-  name: typeof CommandName.ApproveDeposit;
-  data: {
-    transactionID: string;
-    accountID: string;
-    amount: bigint;
-  };
+export {
+  type ApproveDeposit,
+  ApproveDepositSchema,
+  type Deposit,
+  DepositSchema,
 };
 
 export type DomainCommand = Deposit | ApproveDeposit;
 
-export const { messageCreators, messageValidators, messageDescribers } =
-  defineCommands<DomainCommand>([
-    [
-      CommandName.Deposit,
-      "0cfac865-a1d9-4fd2-b085-f8fce0053795",
-      validateDeposit,
-      describeDeposit,
-    ],
-    [
-      CommandName.ApproveDeposit,
-      "6cd5ee09-b59d-45ef-a8ed-91cb1bb6940a",
-      validateApproveDeposit,
-      describeApproveDeposit,
-    ],
-  ]);
+registerCommand(DepositSchema, "0cfac865-a1d9-4fd2-b085-f8fce0053795", {
+  validate: validateDeposit,
+  describe: describeDeposit,
+  allowIdempotent: true,
+});
 
-function validateDeposit({ data: m }: Deposit) {
-  if (m.transactionID === "") {
+registerCommand(ApproveDepositSchema, "6cd5ee09-b59d-45ef-a8ed-91cb1bb6940a", {
+  validate: validateApproveDeposit,
+  describe: describeApproveDeposit,
+  allowIdempotent: true,
+});
+
+function validateDeposit(m: Deposit) {
+  if (m.transactionId === "") {
     throw new InvalidMessageError(
       "Deposit must not have an empty transaction ID",
     );
   }
-  if (m.accountID === "") {
+  if (m.accountId === "") {
     throw new InvalidMessageError("Deposit must not have an empty account ID");
   }
   if (m.amount < 1n) {
@@ -62,13 +42,13 @@ function validateDeposit({ data: m }: Deposit) {
   }
 }
 
-function validateApproveDeposit({ data: m }: ApproveDeposit) {
-  if (m.transactionID === "") {
+function validateApproveDeposit(m: ApproveDeposit) {
+  if (m.transactionId === "") {
     throw new InvalidMessageError(
       "ApproveDeposit must not have an empty transaction ID",
     );
   }
-  if (m.accountID === "") {
+  if (m.accountId === "") {
     throw new InvalidMessageError(
       "ApproveDeposit must not have an empty account ID",
     );
@@ -78,10 +58,10 @@ function validateApproveDeposit({ data: m }: ApproveDeposit) {
   }
 }
 
-function describeDeposit({ data: m }: Deposit) {
-  return `deposit ${m.transactionID}: depositing ${formatAmount(m.amount)} into account ${m.accountID}`;
+function describeDeposit(m: Deposit) {
+  return `deposit ${m.transactionId}: depositing ${formatAmount(m.amount)} into account ${m.accountId}`;
 }
 
-function describeApproveDeposit({ data: m }: ApproveDeposit) {
-  return `deposit ${m.transactionID}: approving deposit of ${formatAmount(m.amount)} into account ${m.accountID}`;
+function describeApproveDeposit(m: ApproveDeposit) {
+  return `deposit ${m.transactionId}: approving deposit of ${formatAmount(m.amount)} into account ${m.accountId}`;
 }

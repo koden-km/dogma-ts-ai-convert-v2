@@ -1,66 +1,31 @@
-import {
-  defineEvents,
-  type Event,
-  InvalidMessageError,
-} from "@/dogma/message.ts";
+import { InvalidMessageError, registerEvent } from "@/dogma/message.ts";
 import { formatAmount } from "../format.ts";
 import {
-  DebitFailureReason,
+  formatDebitFailureReason,
+  formatTransactionType,
+  isValidDebitFailureReason,
   isValidTransactionType,
-  type TransactionType,
 } from "../transaction.ts";
+import {
+  type AccountCredited,
+  AccountCreditedSchema,
+  type AccountDebitDeclined,
+  AccountDebitDeclinedSchema,
+  type AccountDebited,
+  AccountDebitedSchema,
+  type AccountOpened,
+  AccountOpenedSchema,
+} from "./account_pb.ts";
 
-export const EventName = {
-  AccountOpened: "AccountOpened",
-  AccountCredited: "AccountCredited",
-  AccountDebited: "AccountDebited",
-  AccountDebitDeclined: "AccountDebitDeclined",
-} as const;
-
-// AccountOpened is an event indicating that a new bank account has been opened.
-export type AccountOpened = Event & {
-  name: typeof EventName.AccountOpened;
-  data: {
-    customerID: string;
-    accountID: string;
-    accountName: string;
-  };
-};
-
-// AccountCredited is an event indicating that a bank account was credited.
-export type AccountCredited = Event & {
-  name: typeof EventName.AccountCredited;
-  data: {
-    transactionID: string;
-    accountID: string;
-    transactionType: TransactionType;
-    amount: bigint;
-  };
-};
-
-// AccountDebited is an event indicating that a bank account was debited.
-export type AccountDebited = Event & {
-  name: typeof EventName.AccountDebited;
-  data: {
-    transactionID: string;
-    accountID: string;
-    transactionType: TransactionType;
-    amount: bigint;
-    scheduledTime: string | Date;
-  };
-};
-
-// AccountDebitDeclined is an event indicating that a bank account debit was
-// declined.
-export type AccountDebitDeclined = Event & {
-  name: typeof EventName.AccountDebitDeclined;
-  data: {
-    transactionID: string;
-    accountID: string;
-    transactionType: TransactionType;
-    amount: bigint;
-    reason: DebitFailureReason;
-  };
+export {
+  type AccountCredited,
+  AccountCreditedSchema,
+  type AccountDebitDeclined,
+  AccountDebitDeclinedSchema,
+  type AccountDebited,
+  AccountDebitedSchema,
+  type AccountOpened,
+  AccountOpenedSchema,
 };
 
 export type DomainEvent =
@@ -69,41 +34,41 @@ export type DomainEvent =
   | AccountDebited
   | AccountDebitDeclined;
 
-export const { messageCreators, messageValidators, messageDescribers } =
-  defineEvents<DomainEvent>([
-    [
-      EventName.AccountOpened,
-      "75ef425c-3c42-4ead-8925-cd26cbea3139",
-      validateAccountOpened,
-      describeAccountOpened,
-    ],
-    [
-      EventName.AccountCredited,
-      "f3091f46-7d36-4e5f-b0ab-fb96029e5d7a",
-      validateAccountCredited,
-      describeAccountCredited,
-    ],
-    [
-      EventName.AccountDebited,
-      "76552351-0095-442e-85dd-68f8f7fae286",
-      validateAccountDebited,
-      describeAccountDebited,
-    ],
-    [
-      EventName.AccountDebitDeclined,
-      "34b0c426-5467-44d8-a5db-7d09c789c930",
-      validateAccountDebitDeclined,
-      describeAccountDebitDeclined,
-    ],
-  ]);
+registerEvent(AccountOpenedSchema, "75ef425c-3c42-4ead-8925-cd26cbea3139", {
+  validate: validateAccountOpened,
+  describe: describeAccountOpened,
+  allowIdempotent: true,
+});
 
-function validateAccountOpened({ data: m }: AccountOpened) {
-  if (m.customerID === "") {
+registerEvent(AccountCreditedSchema, "f3091f46-7d36-4e5f-b0ab-fb96029e5d7a", {
+  validate: validateAccountCredited,
+  describe: describeAccountCredited,
+  allowIdempotent: true,
+});
+
+registerEvent(AccountDebitedSchema, "76552351-0095-442e-85dd-68f8f7fae286", {
+  validate: validateAccountDebited,
+  describe: describeAccountDebited,
+  allowIdempotent: true,
+});
+
+registerEvent(
+  AccountDebitDeclinedSchema,
+  "34b0c426-5467-44d8-a5db-7d09c789c930",
+  {
+    validate: validateAccountDebitDeclined,
+    describe: describeAccountDebitDeclined,
+    allowIdempotent: true,
+  },
+);
+
+function validateAccountOpened(m: AccountOpened) {
+  if (m.customerId === "") {
     throw new InvalidMessageError(
       "AccountOpened must not have an empty customer ID",
     );
   }
-  if (m.accountID === "") {
+  if (m.accountId === "") {
     throw new InvalidMessageError(
       "AccountOpened must not have an empty account ID",
     );
@@ -115,13 +80,13 @@ function validateAccountOpened({ data: m }: AccountOpened) {
   }
 }
 
-function validateAccountCredited({ data: m }: AccountCredited) {
-  if (m.transactionID === "") {
+function validateAccountCredited(m: AccountCredited) {
+  if (m.transactionId === "") {
     throw new InvalidMessageError(
       "AccountCredited must not have an empty transaction ID",
     );
   }
-  if (m.accountID === "") {
+  if (m.accountId === "") {
     throw new InvalidMessageError(
       "AccountCredited must not have an empty account ID",
     );
@@ -138,13 +103,13 @@ function validateAccountCredited({ data: m }: AccountCredited) {
   }
 }
 
-function validateAccountDebited({ data: m }: AccountDebited) {
-  if (m.transactionID === "") {
+function validateAccountDebited(m: AccountDebited) {
+  if (m.transactionId === "") {
     throw new InvalidMessageError(
       "AccountDebited must not have an empty transaction ID",
     );
   }
-  if (m.accountID === "") {
+  if (m.accountId === "") {
     throw new InvalidMessageError(
       "AccountDebited must not have an empty account ID",
     );
@@ -159,13 +124,13 @@ function validateAccountDebited({ data: m }: AccountDebited) {
   }
 }
 
-function validateAccountDebitDeclined({ data: m }: AccountDebitDeclined) {
-  if (m.transactionID === "") {
+function validateAccountDebitDeclined(m: AccountDebitDeclined) {
+  if (m.transactionId === "") {
     throw new InvalidMessageError(
       "AccountDebitDeclined must not have an empty transaction ID",
     );
   }
-  if (m.accountID === "") {
+  if (m.accountId === "") {
     throw new InvalidMessageError(
       "AccountDebitDeclined must not have an empty account ID",
     );
@@ -180,25 +145,25 @@ function validateAccountDebitDeclined({ data: m }: AccountDebitDeclined) {
       "AccountDebitDeclined must have a positive amount",
     );
   }
-  if (!Object.values(DebitFailureReason).includes(m.reason)) {
+  if (!isValidDebitFailureReason(m.reason)) {
     throw new InvalidMessageError(
       `AccountDebitDeclined must have a valid reason: invalid debit failure reason: ${String(m.reason)}`,
     );
   }
 }
 
-function describeAccountOpened({ data: m }: AccountOpened) {
-  return `opened account ${m.accountID} ${m.accountName} for customer ${m.customerID}`;
+function describeAccountOpened(m: AccountOpened) {
+  return `opened account ${m.accountId} ${m.accountName} for customer ${m.customerId}`;
 }
 
-function describeAccountCredited({ data: m }: AccountCredited) {
-  return `${m.transactionType} ${m.transactionID}: credited ${formatAmount(m.amount)} to account ${m.accountID}`;
+function describeAccountCredited(m: AccountCredited) {
+  return `${formatTransactionType(m.transactionType)} ${m.transactionId}: credited ${formatAmount(m.amount)} to account ${m.accountId}`;
 }
 
-function describeAccountDebited({ data: m }: AccountDebited) {
-  return `${m.transactionType} ${m.transactionID}: debited ${formatAmount(m.amount)} from account ${m.accountID}`;
+function describeAccountDebited(m: AccountDebited) {
+  return `${formatTransactionType(m.transactionType)} ${m.transactionId}: debited ${formatAmount(m.amount)} from account ${m.accountId}`;
 }
 
-function describeAccountDebitDeclined({ data: m }: AccountDebitDeclined) {
-  return `${m.transactionType} ${m.transactionID}: declined debit of ${formatAmount(m.amount)} from account ${m.accountID}: ${m.reason}`;
+function describeAccountDebitDeclined(m: AccountDebitDeclined) {
+  return `${formatTransactionType(m.transactionType)} ${m.transactionId}: declined debit of ${formatAmount(m.amount)} from account ${m.accountId}: ${formatDebitFailureReason(m.reason)}`;
 }

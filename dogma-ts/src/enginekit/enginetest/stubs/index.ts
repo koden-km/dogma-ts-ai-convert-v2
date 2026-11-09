@@ -29,34 +29,25 @@ import {
 } from "@/dogma/index.ts";
 
 export type CommandStub<T = string> = Command & {
-  type: "command";
-  name: string;
-  data: {
-    content: T;
-    validationError?: string;
-  };
+  $typeName: string;
+  content: T;
+  validationError?: string;
   validate?(): void;
   messageDescription?(): string;
 };
 
 export type EventStub<T = string> = Event & {
-  type: "event";
-  name: string;
-  data: {
-    content: T;
-    validationError?: string;
-  };
+  $typeName: string;
+  content: T;
+  validationError?: string;
   validate?(): void;
   messageDescription?(): string;
 };
 
 export type DeadlineStub<T = string> = Deadline & {
-  type: "deadline";
-  name: string;
-  data: {
-    content: T;
-    validationError?: string;
-  };
+  $typeName: string;
+  content: T;
+  validationError?: string;
   validate?(): void;
   messageDescription?(): string;
 };
@@ -67,19 +58,19 @@ export function createCommandStub<T = string>(
   validationError = "",
 ): CommandStub<T> {
   return {
-    type: "command",
-    name,
-    data: { content, validationError: validationError || undefined },
+    $typeName: name,
+    content,
+    validationError: validationError || undefined,
     validate() {
-      if (this.data.validationError) {
-        throw new Error(this.data.validationError);
+      if (this.validationError) {
+        throw new Error(this.validationError);
       }
     },
     messageDescription() {
-      const validity = this.data.validationError
-        ? `invalid: ${this.data.validationError}`
+      const validity = this.validationError
+        ? `invalid: ${this.validationError}`
         : "valid";
-      return `command(${name}:${String(this.data.content)}, ${validity})`;
+      return `command(${name}:${String(this.content)}, ${validity})`;
     },
   };
 }
@@ -90,19 +81,19 @@ export function createEventStub<T = string>(
   validationError = "",
 ): EventStub<T> {
   return {
-    type: "event",
-    name,
-    data: { content, validationError: validationError || undefined },
+    $typeName: name,
+    content,
+    validationError: validationError || undefined,
     validate() {
-      if (this.data.validationError) {
-        throw new Error(this.data.validationError);
+      if (this.validationError) {
+        throw new Error(this.validationError);
       }
     },
     messageDescription() {
-      const validity = this.data.validationError
-        ? `invalid: ${this.data.validationError}`
+      const validity = this.validationError
+        ? `invalid: ${this.validationError}`
         : "valid";
-      return `event(${name}:${String(this.data.content)}, ${validity})`;
+      return `event(${name}:${String(this.content)}, ${validity})`;
     },
   };
 }
@@ -113,19 +104,19 @@ export function createDeadlineStub<T = string>(
   validationError = "",
 ): DeadlineStub<T> {
   return {
-    type: "deadline",
-    name,
-    data: { content, validationError: validationError || undefined },
+    $typeName: name,
+    content,
+    validationError: validationError || undefined,
     validate() {
-      if (this.data.validationError) {
-        throw new Error(this.data.validationError);
+      if (this.validationError) {
+        throw new Error(this.validationError);
       }
     },
     messageDescription() {
-      const validity = this.data.validationError
-        ? `invalid: ${this.data.validationError}`
+      const validity = this.validationError
+        ? `invalid: ${this.validationError}`
         : "valid";
-      return `deadline(${name}:${String(this.data.content)}, ${validity})`;
+      return `deadline(${name}:${String(this.content)}, ${validity})`;
     },
   };
 }

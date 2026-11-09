@@ -1,0 +1,40 @@
+edition = "2024";
+package dogma.example.messages.commands.v1;
+
+option features.field_presence = IMPLICIT;
+
+import "src/example/messages/transaction.proto";
+
+// OpenAccountForNewCustomer is a command requesting that a new bank account be
+// opened for a new customer.
+message OpenAccountForNewCustomer {
+  string customer_id = 1;
+  string customer_name = 2;
+  string account_id = 3;
+  string account_name = 4;
+}
+
+// OpenAccount is a command requesting that a new bank account be opened for an
+// existing customer.
+message OpenAccount {
+  string customer_id = 1;
+  string account_id = 2;
+  string account_name = 3;
+}
+
+// CreditAccount is a command that requests a bank account be credited.
+message CreditAccount {
+  string transaction_id = 1;
+  string account_id = 2;
+  dogma.example.messages.v1.TransactionType transaction_type = 3;
+  int64 amount = 4;
+}
+
+// DebitAccount is a command that requests a bank account be debited.
+message DebitAccount {
+  string transaction_id = 1;
+  string account_id = 2;
+  dogma.example.messages.v1.TransactionType transaction_type = 3;
+  int64 amount = 4;
+  string scheduled_time = 5;
+}

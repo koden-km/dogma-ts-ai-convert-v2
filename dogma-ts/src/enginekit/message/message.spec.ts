@@ -35,7 +35,7 @@ describe("enginekit/message", () => {
     registerEvent("MyEvt", "bef3014a-fca1-4cb3-90a3-ee83f5ca56c8");
     registerDeadline("MyDln", "e11b5a92-e1ab-4a16-841a-9286b4e4d12f");
 
-    const cmd: Command = { type: "command", name: "MyCmd" };
+    const cmd: Command = { $typeName: "MyCmd" };
     expect(kindOf(cmd)).toBe(CommandKind);
     expect(nameOf(cmd)).toBe("MyCmd");
 

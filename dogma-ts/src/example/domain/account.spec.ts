@@ -1,10 +1,9 @@
 import { describe, it } from "vitest";
+import { create } from "@/dogma/index.ts";
 import { newApp } from "@/example/app.ts";
 import {
-  CommandName,
-  createCommand,
-  createEvent,
-  EventName,
+  AccountOpenedSchema,
+  OpenAccountSchema,
 } from "@/example/messages/index.ts";
 import {
   begin,
@@ -19,16 +18,16 @@ describe("OpenAccount", () => {
     it("the new account is opened", () => {
       begin(newApp()).expect(
         executeCommand(
-          createCommand(CommandName.OpenAccount, {
-            customerID: "C001",
-            accountID: "A001",
+          create(OpenAccountSchema, {
+            customerId: "C001",
+            accountId: "A001",
             accountName: "Anna Smith",
           }),
         ),
         toRecordEvent(
-          createEvent(EventName.AccountOpened, {
-            customerID: "C001",
-            accountID: "A001",
+          create(AccountOpenedSchema, {
+            customerId: "C001",
+            accountId: "A001",
             accountName: "Anna Smith",
           }),
         ),
@@ -41,22 +40,22 @@ describe("OpenAccount", () => {
       begin(newApp())
         .prepare(
           executeCommand(
-            createCommand(CommandName.OpenAccount, {
-              customerID: "C001",
-              accountID: "A001",
+            create(OpenAccountSchema, {
+              customerId: "C001",
+              accountId: "A001",
               accountName: "Anna Smith",
             }),
           ),
         )
         .expect(
           executeCommand(
-            createCommand(CommandName.OpenAccount, {
-              customerID: "C001",
-              accountID: "A001",
+            create(OpenAccountSchema, {
+              customerId: "C001",
+              accountId: "A001",
               accountName: "Anna Smith",
             }),
           ),
-          noneOf(toRecordEventOfType(EventName.AccountOpened)),
+          noneOf(toRecordEventOfType(AccountOpenedSchema)),
         );
     });
   });

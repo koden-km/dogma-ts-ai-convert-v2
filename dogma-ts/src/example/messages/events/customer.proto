@@ -1,0 +1,13 @@
+edition = "2024";
+package dogma.example.messages.events.v1;
+
+option features.field_presence = IMPLICIT;
+
+// CustomerAcquired is an event indicating that a new customer has been
+// acquired.
+message CustomerAcquired {
+  string customer_id = 1;
+  string customer_name = 2;
+  string account_id = 3;
+  string account_name = 4;
+}

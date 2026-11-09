@@ -1,3 +1,5 @@
+import { create } from "@bufbuild/protobuf";
+import type { GenMessage } from "@bufbuild/protobuf/codegenv2";
 import type {
   Command,
   CommandValidationScope,
@@ -14,19 +16,31 @@ export type MessageKind = "command" | "event" | "deadline";
 
 // RegisteredMessageType contains information about an implementation of [Command],
 // [Event], or [Deadline] that's in Dogma's message registry.
-export type RegisteredMessageType = {
+export type RegisteredMessageType<T extends Message = Message> = {
   readonly id: string;
   readonly name: string;
   readonly kind: MessageKind;
-  readonly validate?: (msg: any, scope?: any) => void;
-  readonly describe?: (msg: any) => string;
-  create(): Message;
+  readonly schema?: GenMessage<T>;
+  validate?(msg: T, scope?: any): void;
+  describe?(msg: T): string;
+  create(): T;
 };
 
+export type MessageSchemaOrName<T extends Message = Message> =
+  | GenMessage<T>
+  | T["$typeName"]
+  | string;
+
+export type MessageTypeInput<T extends Message = Message> =
+  | GenMessage<T>
+  | RegisteredMessageType<T>
+  | T["$typeName"]
+  | string;
+
 type MessageTypes = {
-  byID: Map<string, RegisteredMessageType>;
-  byName: Map<string, RegisteredMessageType>;
-  slice: RegisteredMessageType[];
+  byID: Map<string, RegisteredMessageType<any>>;
+  byName: Map<string, RegisteredMessageType<any>>;
+  slice: RegisteredMessageType<any>[];
 };
 
 let registry: MessageTypes = {
@@ -44,16 +58,30 @@ export function resetMessageRegistry(): void {
   };
 }
 
-function registerMessageType(
+function isGenMessage<T extends Message = Message>(
+  v: unknown,
+): v is GenMessage<T> {
+  return (
+    typeof v === "object" &&
+    v !== null &&
+    "typeName" in v &&
+    typeof (v as GenMessage<T>).typeName === "string"
+  );
+}
+
+function registerMessageType<T extends Message = Message>(
   kind: MessageKind,
-  name: string,
+  schemaOrName: MessageSchemaOrName<T>,
   id: string,
   options?: {
-    validate?: (msg: any, scope?: any) => void;
-    describe?: (msg: any) => string;
+    validate?: (msg: T, scope?: any) => void;
+    describe?: (msg: T) => string;
     allowIdempotent?: boolean;
   },
-): RegisteredMessageType {
+): RegisteredMessageType<T> {
+  const schema = isGenMessage<T>(schemaOrName) ? schemaOrName : undefined;
+  const name = schema ? schema.typeName : (schemaOrName as string);
+
   let normalizedID: string;
   try {
     normalizedID = normalizeUUID(id);
@@ -67,7 +95,7 @@ function registerMessageType(
   if (existingByName) {
     if (existingByName.id === normalizedID) {
       if (options?.allowIdempotent) {
-        return existingByName;
+        return existingByName as RegisteredMessageType<T>;
       }
       throw new Error(`cannot register ${name}: it is already registered`);
     }
@@ -83,18 +111,20 @@ function registerMessageType(
     );
   }
 
-  const entry: RegisteredMessageType = {
+  const entry: RegisteredMessageType<T> = {
     id: normalizedID,
     name,
     kind,
+    schema,
     validate: options?.validate,
     describe: options?.describe,
-    create() {
+    create(): T {
+      if (schema) {
+        return create(schema);
+      }
       return {
-        type: kind,
-        name,
-        data: {},
-      };
+        $typeName: name,
+      } as T;
     },
   };
 
@@ -108,65 +138,78 @@ function registerMessageType(
 // registerCommand adds a [Command] message type to the Dogma message registry,
 // making it eligible for use with [handlesCommand] and [executesCommand].
 export function registerCommand<T extends Command = Command>(
-  name: T["name"],
+  schemaOrName: MessageSchemaOrName<T>,
   id: string,
   options?: {
     validate?: (msg: T, scope?: CommandValidationScope) => void;
     describe?: (msg: T) => string;
     allowIdempotent?: boolean;
   },
-): RegisteredMessageType {
-  return registerMessageType("command", name, id, options);
+): RegisteredMessageType<T> {
+  return registerMessageType("command", schemaOrName, id, options);
 }
 
 // registerEvent adds an [Event] message type to the Dogma message registry,
 // making it eligible for use with [handlesEvent] and [recordsEvent].
 export function registerEvent<T extends Event = Event>(
-  name: T["name"],
+  schemaOrName: MessageSchemaOrName<T>,
   id: string,
   options?: {
     validate?: (msg: T, scope?: EventValidationScope) => void;
     describe?: (msg: T) => string;
     allowIdempotent?: boolean;
   },
-): RegisteredMessageType {
-  return registerMessageType("event", name, id, options);
+): RegisteredMessageType<T> {
+  return registerMessageType("event", schemaOrName, id, options);
 }
 
 // registerDeadline adds a [Deadline] message type to the Dogma message
 // registry, making it eligible for use with [schedulesDeadline].
 export function registerDeadline<T extends Deadline = Deadline>(
-  name: T["name"],
+  schemaOrName: MessageSchemaOrName<T>,
   id: string,
   options?: {
     validate?: (msg: T, scope?: DeadlineValidationScope) => void;
     describe?: (msg: T) => string;
     allowIdempotent?: boolean;
   },
-): RegisteredMessageType {
-  return registerMessageType("deadline", name, id, options);
+): RegisteredMessageType<T> {
+  return registerMessageType("deadline", schemaOrName, id, options);
 }
 
 // registeredMessageTypeFor returns the [RegisteredMessageType] for the given
-// message name or [RegisteredMessageType], or undefined if not registered.
-export function registeredMessageTypeFor(
-  nameOrType: string | RegisteredMessageType,
-): RegisteredMessageType | undefined {
-  if (typeof nameOrType !== "string") {
-    return registry.byName.get(nameOrType.name) ?? nameOrType;
+// message schema, name, or [RegisteredMessageType], or undefined if not registered.
+export function registeredMessageTypeFor<T extends Message = Message>(
+  nameOrType: MessageTypeInput<T>,
+): RegisteredMessageType<T> | undefined {
+  if (typeof nameOrType === "string") {
+    return registry.byName.get(nameOrType) as
+      | RegisteredMessageType<T>
+      | undefined;
   }
-  return registry.byName.get(nameOrType);
+  if (isGenMessage<T>(nameOrType)) {
+    return registry.byName.get(nameOrType.typeName) as
+      | RegisteredMessageType<T>
+      | undefined;
+  }
+  return (registry.byName.get(nameOrType.name) ??
+    nameOrType) as RegisteredMessageType<T>;
 }
 
 // mustRegisteredMessageTypeFor returns the [RegisteredMessageType] for the given
-// message name or throws an error if it isn't in the message type registry.
-export function mustRegisteredMessageTypeFor(
-  nameOrType: string | RegisteredMessageType,
-): RegisteredMessageType {
+// message schema, name, or [RegisteredMessageType], or throws an error if it
+// isn't in the message type registry.
+export function mustRegisteredMessageTypeFor<T extends Message = Message>(
+  nameOrType: MessageTypeInput<T>,
+): RegisteredMessageType<T> {
   const mt = registeredMessageTypeFor(nameOrType);
   if (!mt) {
     const name =
-      typeof nameOrType === "string" ? nameOrType : nameOrType.name;
+      typeof nameOrType === "string"
+        ? nameOrType
+        : isGenMessage(nameOrType)
+          ? nameOrType.typeName
+          : nameOrType.name;
     throw new Error(`${name} is not in the message type registry`);
   }
   return mt;
@@ -180,7 +223,7 @@ export function registeredMessageTypeOf(
   if (!m) {
     throw new Error("message cannot be null or undefined");
   }
-  return registry.byName.get(m.name);
+  return registry.byName.get(m.$typeName);
 }
 
 // registeredMessageTypeByID returns the [RegisteredMessageType] with the given
@@ -212,7 +255,7 @@ export function validateMessage(
     anyMsg.validate(scope);
     return;
   }
-  const mt = registry.byName.get(m.name);
+  const mt = registry.byName.get(m.$typeName);
   if (mt?.validate) {
     mt.validate(m, scope);
   }
@@ -226,9 +269,9 @@ export function describeMessage(m: Message): string {
   if (typeof anyMsg.messageDescription === "function") {
     return anyMsg.messageDescription();
   }
-  const mt = registry.byName.get(m.name);
+  const mt = registry.byName.get(m.$typeName);
   if (mt?.describe) {
     return mt.describe(m);
   }
-  return m.name;
+  return m.$typeName;
 }

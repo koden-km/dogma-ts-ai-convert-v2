@@ -1,80 +1,62 @@
-import {
-  type Command,
-  defineCommands,
-  InvalidMessageError,
-} from "@/dogma/message.ts";
+import { InvalidMessageError, registerCommand } from "@/dogma/message.ts";
 import { formatAmount } from "../format.ts";
-import { DebitFailureReason } from "../transaction.ts";
+import {
+  formatDebitFailureReason,
+  isValidDebitFailureReason,
+} from "../transaction.ts";
+import {
+  type ApproveWithdrawal,
+  ApproveWithdrawalSchema,
+  type DeclineWithdrawal,
+  DeclineWithdrawalSchema,
+  type Withdraw,
+  WithdrawSchema,
+} from "./withdrawal_pb.ts";
 
-export const CommandName = {
-  Withdraw: "Withdraw",
-  ApproveWithdrawal: "ApproveWithdrawal",
-  DeclineWithdrawal: "DeclineWithdrawal",
-} as const;
-
-// Withdraw is a command requesting that funds be withdrawn from a bank account.
-export type Withdraw = Command & {
-  name: typeof CommandName.Withdraw;
-  data: {
-    transactionID: string;
-    accountID: string;
-    amount: bigint;
-    scheduledTime: string | Date;
-  };
-};
-
-// ApproveWithdrawal is a command that approves an account withdrawal.
-export type ApproveWithdrawal = Command & {
-  name: typeof CommandName.ApproveWithdrawal;
-  data: {
-    transactionID: string;
-    accountID: string;
-    amount: bigint;
-  };
-};
-
-// DeclineWithdrawal is a command that rejects an account withdrawal.
-export type DeclineWithdrawal = Command & {
-  name: typeof CommandName.DeclineWithdrawal;
-  data: {
-    transactionID: string;
-    accountID: string;
-    amount: bigint;
-    reason: DebitFailureReason;
-  };
+export {
+  type ApproveWithdrawal,
+  ApproveWithdrawalSchema,
+  type DeclineWithdrawal,
+  DeclineWithdrawalSchema,
+  type Withdraw,
+  WithdrawSchema,
 };
 
 export type DomainCommand = Withdraw | ApproveWithdrawal | DeclineWithdrawal;
 
-export const { messageCreators, messageValidators, messageDescribers } =
-  defineCommands<DomainCommand>([
-    [
-      CommandName.Withdraw,
-      "5528ea57-2fa4-4ddd-ac96-3ec56ec89fce",
-      validateWithdraw,
-      describeWithdraw,
-    ],
-    [
-      CommandName.ApproveWithdrawal,
-      "1023356f-f49c-4ea1-9244-83fdb3225da9",
-      validateApproveWithdrawal,
-      describeApproveWithdrawal,
-    ],
-    [
-      CommandName.DeclineWithdrawal,
-      "ee1e59ff-ed96-4d66-a1aa-f0a11ca8c47d",
-      validateDeclineWithdrawal,
-      describeDeclineWithdrawal,
-    ],
-  ]);
+registerCommand(WithdrawSchema, "5528ea57-2fa4-4ddd-ac96-3ec56ec89fce", {
+  validate: validateWithdraw,
+  describe: describeWithdraw,
+  allowIdempotent: true,
+});
 
-function validateWithdraw({ data: m }: Withdraw) {
-  if (m.transactionID === "") {
+registerCommand(
+  ApproveWithdrawalSchema,
+  "1023356f-f49c-4ea1-9244-83fdb3225da9",
+  {
+    validate: validateApproveWithdrawal,
+    describe: describeApproveWithdrawal,
+    allowIdempotent: true,
+  },
+);
+
+registerCommand(
+  DeclineWithdrawalSchema,
+  "ee1e59ff-ed96-4d66-a1aa-f0a11ca8c47d",
+  {
+    validate: validateDeclineWithdrawal,
+    describe: describeDeclineWithdrawal,
+    allowIdempotent: true,
+  },
+);
+
+function validateWithdraw(m: Withdraw) {
+  if (m.transactionId === "") {
     throw new InvalidMessageError(
       "Withdraw must not have an empty transaction ID",
     );
   }
-  if (m.accountID === "") {
+  if (m.accountId === "") {
     throw new InvalidMessageError("Withdraw must not have an empty account ID");
   }
   if (m.amount < 1n) {
@@ -82,13 +64,13 @@ function validateWithdraw({ data: m }: Withdraw) {
   }
 }
 
-function validateApproveWithdrawal({ data: m }: ApproveWithdrawal) {
-  if (m.transactionID === "") {
+function validateApproveWithdrawal(m: ApproveWithdrawal) {
+  if (m.transactionId === "") {
     throw new InvalidMessageError(
       "ApproveWithdrawal must not have an empty transaction ID",
     );
   }
-  if (m.accountID === "") {
+  if (m.accountId === "") {
     throw new InvalidMessageError(
       "ApproveWithdrawal must not have an empty account ID",
     );
@@ -100,13 +82,13 @@ function validateApproveWithdrawal({ data: m }: ApproveWithdrawal) {
   }
 }
 
-function validateDeclineWithdrawal({ data: m }: DeclineWithdrawal) {
-  if (m.transactionID === "") {
+function validateDeclineWithdrawal(m: DeclineWithdrawal) {
+  if (m.transactionId === "") {
     throw new InvalidMessageError(
       "DeclineWithdrawal must not have an empty transaction ID",
     );
   }
-  if (m.accountID === "") {
+  if (m.accountId === "") {
     throw new InvalidMessageError(
       "DeclineWithdrawal must not have an empty account ID",
     );
@@ -116,21 +98,21 @@ function validateDeclineWithdrawal({ data: m }: DeclineWithdrawal) {
       "DeclineWithdrawal must have a positive amount",
     );
   }
-  if (!Object.values(DebitFailureReason).includes(m.reason)) {
+  if (!isValidDebitFailureReason(m.reason)) {
     throw new InvalidMessageError(
       `DeclineWithdrawal must have a valid reason: invalid debit failure reason: ${String(m.reason)}`,
     );
   }
 }
 
-function describeWithdraw({ data: m }: Withdraw) {
-  return `withdrawal ${m.transactionID}: withdrawing ${formatAmount(m.amount)} from account ${m.accountID}`;
+function describeWithdraw(m: Withdraw) {
+  return `withdrawal ${m.transactionId}: withdrawing ${formatAmount(m.amount)} from account ${m.accountId}`;
 }
 
-function describeApproveWithdrawal({ data: m }: ApproveWithdrawal) {
-  return `withdrawal ${m.transactionID}: approving withdrawal of ${formatAmount(m.amount)} from account ${m.accountID}`;
+function describeApproveWithdrawal(m: ApproveWithdrawal) {
+  return `withdrawal ${m.transactionId}: approving withdrawal of ${formatAmount(m.amount)} from account ${m.accountId}`;
 }
 
-function describeDeclineWithdrawal({ data: m }: DeclineWithdrawal) {
-  return `withdrawal ${m.transactionID}: declining withdrawal of ${formatAmount(m.amount)} from account ${m.accountID}: ${m.reason}`;
+function describeDeclineWithdrawal(m: DeclineWithdrawal) {
+  return `withdrawal ${m.transactionId}: declining withdrawal of ${formatAmount(m.amount)} from account ${m.accountId}: ${formatDebitFailureReason(m.reason)}`;
 }

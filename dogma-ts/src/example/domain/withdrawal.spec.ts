@@ -1,12 +1,14 @@
 import { describe, it } from "vitest";
+import { create } from "@/dogma/index.ts";
 import { newApp } from "@/example/app.ts";
 import { maximumDailyDebitLimit } from "@/example/domain/daily-debit-limit.ts";
 import {
-  CommandName,
-  createCommand,
-  createEvent,
   DebitFailureReason,
-  EventName,
+  DepositSchema,
+  OpenAccountSchema,
+  WithdrawalApprovedSchema,
+  WithdrawalDeclinedSchema,
+  WithdrawSchema,
 } from "@/example/messages/index.ts";
 import { begin, executeCommand, toRecordEvent } from "@/testkit/index.ts";
 
@@ -18,33 +20,33 @@ describe("Withdraw", () => {
       begin(newApp())
         .prepare(
           executeCommand(
-            createCommand(CommandName.OpenAccount, {
-              customerID: "C001",
-              accountID: "A001",
+            create(OpenAccountSchema, {
+              customerId: "C001",
+              accountId: "A001",
               accountName: "Anna Smith",
             }),
           ),
           executeCommand(
-            createCommand(CommandName.Deposit, {
-              transactionID: "T001",
-              accountID: "A001",
+            create(DepositSchema, {
+              transactionId: "T001",
+              accountId: "A001",
               amount: 500n,
             }),
           ),
         )
         .expect(
           executeCommand(
-            createCommand(CommandName.Withdraw, {
-              transactionID: "T002",
-              accountID: "A001",
+            create(WithdrawSchema, {
+              transactionId: "T002",
+              accountId: "A001",
               amount: 500n,
-              scheduledTime: new Date("2001-02-03T00:00:00Z"),
+              scheduledTime: "2001-02-03T00:00:00Z",
             }),
           ),
           toRecordEvent(
-            createEvent(EventName.WithdrawalApproved, {
-              transactionID: "T002",
-              accountID: "A001",
+            create(WithdrawalApprovedSchema, {
+              transactionId: "T002",
+              accountId: "A001",
               amount: 500n,
             }),
           ),
@@ -57,28 +59,28 @@ describe("Withdraw", () => {
       begin(newApp())
         .prepare(
           executeCommand(
-            createCommand(CommandName.OpenAccount, {
-              customerID: "C001",
-              accountID: "A001",
+            create(OpenAccountSchema, {
+              customerId: "C001",
+              accountId: "A001",
               accountName: "Anna Smith",
             }),
           ),
         )
         .expect(
           executeCommand(
-            createCommand(CommandName.Withdraw, {
-              transactionID: "T001",
-              accountID: "A001",
+            create(WithdrawSchema, {
+              transactionId: "T001",
+              accountId: "A001",
               amount: 500n,
-              scheduledTime: new Date("2001-02-03T00:00:00Z"),
+              scheduledTime: "2001-02-03T00:00:00Z",
             }),
           ),
           toRecordEvent(
-            createEvent(EventName.WithdrawalDeclined, {
-              transactionID: "T001",
-              accountID: "A001",
+            create(WithdrawalDeclinedSchema, {
+              transactionId: "T001",
+              accountId: "A001",
               amount: 500n,
-              reason: DebitFailureReason.InsufficientFunds,
+              reason: DebitFailureReason.INSUFFICIENT_FUNDS,
             }),
           ),
         );
@@ -90,33 +92,33 @@ describe("Withdraw", () => {
       begin(newApp())
         .prepare(
           executeCommand(
-            createCommand(CommandName.OpenAccount, {
-              customerID: "C001",
-              accountID: "A001",
+            create(OpenAccountSchema, {
+              customerId: "C001",
+              accountId: "A001",
               accountName: "Anna Smith",
             }),
           ),
           executeCommand(
-            createCommand(CommandName.Deposit, {
-              transactionID: "T001",
-              accountID: "A001",
+            create(DepositSchema, {
+              transactionId: "T001",
+              accountId: "A001",
               amount: expectedDailyDebitLimit + 10000n,
             }),
           ),
         )
         .expect(
           executeCommand(
-            createCommand(CommandName.Withdraw, {
-              transactionID: "T002",
-              accountID: "A001",
+            create(WithdrawSchema, {
+              transactionId: "T002",
+              accountId: "A001",
               amount: 500n,
-              scheduledTime: new Date("2001-02-03T00:00:00Z"),
+              scheduledTime: "2001-02-03T00:00:00Z",
             }),
           ),
           toRecordEvent(
-            createEvent(EventName.WithdrawalApproved, {
-              transactionID: "T002",
-              accountID: "A001",
+            create(WithdrawalApprovedSchema, {
+              transactionId: "T002",
+              accountId: "A001",
               amount: 500n,
             }),
           ),
@@ -127,64 +129,64 @@ describe("Withdraw", () => {
       begin(newApp())
         .prepare(
           executeCommand(
-            createCommand(CommandName.OpenAccount, {
-              customerID: "C001",
-              accountID: "A001",
+            create(OpenAccountSchema, {
+              customerId: "C001",
+              accountId: "A001",
               accountName: "Anna Smith",
             }),
           ),
           executeCommand(
-            createCommand(CommandName.OpenAccount, {
-              customerID: "C002",
-              accountID: "A002",
+            create(OpenAccountSchema, {
+              customerId: "C002",
+              accountId: "A002",
               accountName: "Bob Jones",
             }),
           ),
           executeCommand(
-            createCommand(CommandName.Deposit, {
-              transactionID: "D001",
-              accountID: "A001",
+            create(DepositSchema, {
+              transactionId: "D001",
+              accountId: "A001",
               amount: expectedDailyDebitLimit + 10000n,
             }),
           ),
           executeCommand(
-            createCommand(CommandName.Deposit, {
-              transactionID: "D002",
-              accountID: "A002",
+            create(DepositSchema, {
+              transactionId: "D002",
+              accountId: "A002",
               amount: expectedDailyDebitLimit + 10000n,
             }),
           ),
         )
         .expect(
           executeCommand(
-            createCommand(CommandName.Withdraw, {
-              transactionID: "T001",
-              accountID: "A001",
+            create(WithdrawSchema, {
+              transactionId: "T001",
+              accountId: "A001",
               amount: expectedDailyDebitLimit,
-              scheduledTime: new Date("2001-02-03T00:00:00Z"),
+              scheduledTime: "2001-02-03T00:00:00Z",
             }),
           ),
           toRecordEvent(
-            createEvent(EventName.WithdrawalApproved, {
-              transactionID: "T001",
-              accountID: "A001",
+            create(WithdrawalApprovedSchema, {
+              transactionId: "T001",
+              accountId: "A001",
               amount: expectedDailyDebitLimit,
             }),
           ),
         )
         .expect(
           executeCommand(
-            createCommand(CommandName.Withdraw, {
-              transactionID: "T002",
-              accountID: "A002",
+            create(WithdrawSchema, {
+              transactionId: "T002",
+              accountId: "A002",
               amount: expectedDailyDebitLimit,
-              scheduledTime: new Date("2001-02-03T00:00:00Z"),
+              scheduledTime: "2001-02-03T00:00:00Z",
             }),
           ),
           toRecordEvent(
-            createEvent(EventName.WithdrawalApproved, {
-              transactionID: "T002",
-              accountID: "A002",
+            create(WithdrawalApprovedSchema, {
+              transactionId: "T002",
+              accountId: "A002",
               amount: expectedDailyDebitLimit,
             }),
           ),
@@ -195,41 +197,41 @@ describe("Withdraw", () => {
       begin(newApp())
         .prepare(
           executeCommand(
-            createCommand(CommandName.OpenAccount, {
-              customerID: "C001",
-              accountID: "A001",
+            create(OpenAccountSchema, {
+              customerId: "C001",
+              accountId: "A001",
               accountName: "Anna Smith",
             }),
           ),
           executeCommand(
-            createCommand(CommandName.Deposit, {
-              transactionID: "D001",
-              accountID: "A001",
+            create(DepositSchema, {
+              transactionId: "D001",
+              accountId: "A001",
               amount: expectedDailyDebitLimit * 2n,
             }),
           ),
           executeCommand(
-            createCommand(CommandName.Withdraw, {
-              transactionID: "T001",
-              accountID: "A001",
+            create(WithdrawSchema, {
+              transactionId: "T001",
+              accountId: "A001",
               amount: expectedDailyDebitLimit,
-              scheduledTime: new Date("2001-02-03T00:00:00Z"),
+              scheduledTime: "2001-02-03T00:00:00Z",
             }),
           ),
         )
         .expect(
           executeCommand(
-            createCommand(CommandName.Withdraw, {
-              transactionID: "T002",
-              accountID: "A001",
+            create(WithdrawSchema, {
+              transactionId: "T002",
+              accountId: "A001",
               amount: 500n,
-              scheduledTime: new Date("2001-02-04T00:00:00Z"),
+              scheduledTime: "2001-02-04T00:00:00Z",
             }),
           ),
           toRecordEvent(
-            createEvent(EventName.WithdrawalApproved, {
-              transactionID: "T002",
-              accountID: "A001",
+            create(WithdrawalApprovedSchema, {
+              transactionId: "T002",
+              accountId: "A001",
               amount: 500n,
             }),
           ),
@@ -240,51 +242,51 @@ describe("Withdraw", () => {
       begin(newApp())
         .prepare(
           executeCommand(
-            createCommand(CommandName.OpenAccount, {
-              customerID: "C001",
-              accountID: "A001",
+            create(OpenAccountSchema, {
+              customerId: "C001",
+              accountId: "A001",
               accountName: "Anna Smith",
             }),
           ),
           executeCommand(
-            createCommand(CommandName.Deposit, {
-              transactionID: "D001",
-              accountID: "A001",
+            create(DepositSchema, {
+              transactionId: "D001",
+              accountId: "A001",
               amount: expectedDailyDebitLimit + 1n,
             }),
           ),
           executeCommand(
-            createCommand(CommandName.Withdraw, {
-              transactionID: "T001",
-              accountID: "A001",
+            create(WithdrawSchema, {
+              transactionId: "T001",
+              accountId: "A001",
               amount: expectedDailyDebitLimit / 2n,
-              scheduledTime: new Date("2001-02-03T00:00:00Z"),
+              scheduledTime: "2001-02-03T00:00:00Z",
             }),
           ),
           executeCommand(
-            createCommand(CommandName.Withdraw, {
-              transactionID: "T002",
-              accountID: "A001",
+            create(WithdrawSchema, {
+              transactionId: "T002",
+              accountId: "A001",
               amount: expectedDailyDebitLimit / 2n,
-              scheduledTime: new Date("2001-02-03T00:00:00Z"),
+              scheduledTime: "2001-02-03T00:00:00Z",
             }),
           ),
         )
         .expect(
           executeCommand(
-            createCommand(CommandName.Withdraw, {
-              transactionID: "T003",
-              accountID: "A001",
+            create(WithdrawSchema, {
+              transactionId: "T003",
+              accountId: "A001",
               amount: 1n,
-              scheduledTime: new Date("2001-02-03T00:00:00Z"),
+              scheduledTime: "2001-02-03T00:00:00Z",
             }),
           ),
           toRecordEvent(
-            createEvent(EventName.WithdrawalDeclined, {
-              transactionID: "T003",
-              accountID: "A001",
+            create(WithdrawalDeclinedSchema, {
+              transactionId: "T003",
+              accountId: "A001",
               amount: 1n,
-              reason: DebitFailureReason.DailyDebitLimitExceeded,
+              reason: DebitFailureReason.DAILY_DEBIT_LIMIT_EXCEEDED,
             }),
           ),
         );
@@ -296,35 +298,35 @@ describe("Withdraw", () => {
       begin(newApp())
         .prepare(
           executeCommand(
-            createCommand(CommandName.OpenAccount, {
-              customerID: "C001",
-              accountID: "A001",
+            create(OpenAccountSchema, {
+              customerId: "C001",
+              accountId: "A001",
               accountName: "Anna Smith",
             }),
           ),
           executeCommand(
-            createCommand(CommandName.Deposit, {
-              transactionID: "D001",
-              accountID: "A001",
+            create(DepositSchema, {
+              transactionId: "D001",
+              accountId: "A001",
               amount: expectedDailyDebitLimit + 10000n,
             }),
           ),
         )
         .expect(
           executeCommand(
-            createCommand(CommandName.Withdraw, {
-              transactionID: "T001",
-              accountID: "A001",
+            create(WithdrawSchema, {
+              transactionId: "T001",
+              accountId: "A001",
               amount: expectedDailyDebitLimit + 1n,
-              scheduledTime: new Date("2001-02-03T00:00:00Z"),
+              scheduledTime: "2001-02-03T00:00:00Z",
             }),
           ),
           toRecordEvent(
-            createEvent(EventName.WithdrawalDeclined, {
-              transactionID: "T001",
-              accountID: "A001",
+            create(WithdrawalDeclinedSchema, {
+              transactionId: "T001",
+              accountId: "A001",
               amount: expectedDailyDebitLimit + 1n,
-              reason: DebitFailureReason.DailyDebitLimitExceeded,
+              reason: DebitFailureReason.DAILY_DEBIT_LIMIT_EXCEEDED,
             }),
           ),
         );

@@ -1,0 +1,16 @@
+edition = "2024";
+package dogma.example.messages.commands.v1;
+
+option features.field_presence = IMPLICIT;
+
+import "src/example/messages/transaction.proto";
+
+// ConsumeDailyDebitLimit is a command requesting that an amount of an account
+// daily debit limit be consumed.
+message ConsumeDailyDebitLimit {
+  string transaction_id = 1;
+  string account_id = 2;
+  dogma.example.messages.v1.TransactionType debit_type = 3;
+  int64 amount = 4;
+  string date = 5;
+}

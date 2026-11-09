@@ -1,5 +1,6 @@
 import {
   type Context,
+  create,
   type Event,
   executesCommand,
   handlesEvent,
@@ -12,10 +13,9 @@ import {
   UnexpectedMessageError,
 } from "@/dogma/index.ts";
 import {
-  CommandName,
-  createCommand,
+  CustomerAcquiredSchema,
   type DomainEvent,
-  EventName,
+  OpenAccountSchema,
 } from "../messages/index.ts";
 
 // OpenAccountForNewCustomerProcessHandler manages the process of opening the
@@ -32,16 +32,16 @@ export const OpenAccountForNewCustomerProcessHandler: ProcessMessageHandler<Stat
       );
 
       c.routes(
-        handlesEvent(EventName.CustomerAcquired),
-        executesCommand(CommandName.OpenAccount),
+        handlesEvent(CustomerAcquiredSchema),
+        executesCommand(OpenAccountSchema),
       );
     },
 
     routeEventToInstance(_ctx: Context, e: Event): [string, boolean] {
       const m = e as DomainEvent;
-      switch (m.name) {
-        case EventName.CustomerAcquired:
-          return [m.data.customerID, true];
+      switch (m.$typeName) {
+        case CustomerAcquiredSchema.typeName:
+          return [m.customerId, true];
         default:
           throw new UnexpectedMessageError();
       }
@@ -54,13 +54,13 @@ export const OpenAccountForNewCustomerProcessHandler: ProcessMessageHandler<Stat
       e: Event,
     ): void {
       const m = e as DomainEvent;
-      switch (m.name) {
-        case EventName.CustomerAcquired:
+      switch (m.$typeName) {
+        case CustomerAcquiredSchema.typeName:
           s.executeCommand(
-            createCommand(CommandName.OpenAccount, {
-              customerID: m.data.customerID,
-              accountID: m.data.accountID,
-              accountName: m.data.accountName,
+            create(OpenAccountSchema, {
+              customerId: m.customerId,
+              accountId: m.accountId,
+              accountName: m.accountName,
             }),
           );
           s.end();

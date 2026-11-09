@@ -1,0 +1,12 @@
+edition = "2024";
+package dogma.example.messages.commands.v1;
+
+option features.field_presence = IMPLICIT;
+
+// CreditThirdPartyAccount is a command to credit an account held at a
+// third-party bank.
+message CreditThirdPartyAccount {
+  string transaction_id = 1;
+  string account_id = 2;
+  int64 amount = 3;
+}

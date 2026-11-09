@@ -1,0 +1,20 @@
+edition = "2024";
+package dogma.example.messages.events.v1;
+
+option features.field_presence = IMPLICIT;
+
+// DepositStarted is an event indicating that the process of depositing funds
+// into an account has begun.
+message DepositStarted {
+  string transaction_id = 1;
+  string account_id = 2;
+  int64 amount = 3;
+}
+
+// DepositApproved is an event that indicates a requested deposit has been
+// approved.
+message DepositApproved {
+  string transaction_id = 1;
+  string account_id = 2;
+  int64 amount = 3;
+}

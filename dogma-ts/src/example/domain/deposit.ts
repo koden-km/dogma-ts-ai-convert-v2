@@ -1,5 +1,6 @@
 import {
   type Context,
+  create,
   type Event,
   executesCommand,
   handlesEvent,
@@ -12,10 +13,12 @@ import {
   UnexpectedMessageError,
 } from "@/dogma/index.ts";
 import {
-  CommandName,
-  createCommand,
+  AccountCreditedSchema,
+  ApproveDepositSchema,
+  CreditAccountSchema,
+  DepositApprovedSchema,
+  DepositStartedSchema,
   type DomainEvent,
-  EventName,
   TransactionType,
 } from "../messages/index.ts";
 
@@ -30,26 +33,26 @@ export const DepositProcessHandler: ProcessMessageHandler<StatelessProcessRoot> 
       c.identity("deposit", "4e50b66b-b2c4-4522-bf15-39756186caee");
 
       c.routes(
-        handlesEvent(EventName.DepositStarted),
-        handlesEvent(EventName.AccountCredited),
-        handlesEvent(EventName.DepositApproved),
-        executesCommand(CommandName.CreditAccount),
-        executesCommand(CommandName.ApproveDeposit),
+        handlesEvent(DepositStartedSchema),
+        handlesEvent(AccountCreditedSchema),
+        handlesEvent(DepositApprovedSchema),
+        executesCommand(CreditAccountSchema),
+        executesCommand(ApproveDepositSchema),
       );
     },
 
     routeEventToInstance(_ctx: Context, e: Event): [string, boolean] {
       const m = e as DomainEvent;
-      switch (m.name) {
-        case EventName.DepositStarted:
-          return [m.data.transactionID, true];
-        case EventName.AccountCredited:
+      switch (m.$typeName) {
+        case DepositStartedSchema.typeName:
+          return [m.transactionId, true];
+        case AccountCreditedSchema.typeName:
           return [
-            m.data.transactionID,
-            m.data.transactionType === TransactionType.Deposit,
+            m.transactionId,
+            m.transactionType === TransactionType.DEPOSIT,
           ];
-        case EventName.DepositApproved:
-          return [m.data.transactionID, true];
+        case DepositApprovedSchema.typeName:
+          return [m.transactionId, true];
         default:
           throw new UnexpectedMessageError();
       }
@@ -62,29 +65,29 @@ export const DepositProcessHandler: ProcessMessageHandler<StatelessProcessRoot> 
       e: Event,
     ): void {
       const m = e as DomainEvent;
-      switch (m.name) {
-        case EventName.DepositStarted:
+      switch (m.$typeName) {
+        case DepositStartedSchema.typeName:
           s.executeCommand(
-            createCommand(CommandName.CreditAccount, {
-              transactionID: m.data.transactionID,
-              accountID: m.data.accountID,
-              transactionType: TransactionType.Deposit,
-              amount: m.data.amount,
+            create(CreditAccountSchema, {
+              transactionId: m.transactionId,
+              accountId: m.accountId,
+              transactionType: TransactionType.DEPOSIT,
+              amount: m.amount,
             }),
           );
           return;
 
-        case EventName.AccountCredited:
+        case AccountCreditedSchema.typeName:
           s.executeCommand(
-            createCommand(CommandName.ApproveDeposit, {
-              transactionID: m.data.transactionID,
-              accountID: m.data.accountID,
-              amount: m.data.amount,
+            create(ApproveDepositSchema, {
+              transactionId: m.transactionId,
+              accountId: m.accountId,
+              amount: m.amount,
             }),
           );
           return;
 
-        case EventName.DepositApproved:
+        case DepositApprovedSchema.typeName:
           s.end();
           return;
 

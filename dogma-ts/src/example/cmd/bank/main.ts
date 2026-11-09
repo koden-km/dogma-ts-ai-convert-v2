@@ -1,8 +1,11 @@
 import { createServer } from "node:http";
-import { withCancel } from "@/dogma/index.ts";
+import { create, withCancel } from "@/dogma/index.ts";
 import { fromApplication } from "@/enginekit/index.ts";
 import { newApp } from "@/example/app.ts";
-import { CommandName, createCommand } from "@/example/messages/index.ts";
+import {
+  DepositSchema,
+  OpenAccountForNewCustomerSchema,
+} from "@/example/messages/index.ts";
 import { mustNewDB, newUIHandler } from "@/example/ui/index.ts";
 import {
   enableProjections,
@@ -55,27 +58,27 @@ async function main() {
   if (process.env.SEED_SAMPLE_DATA === "true") {
     await commandExecutor.executeCommand(
       ctx,
-      createCommand(CommandName.OpenAccountForNewCustomer, {
-        customerID: "c-anna",
+      create(OpenAccountForNewCustomerSchema, {
+        customerId: "c-anna",
         customerName: "Anna Smith",
-        accountID: "100200300",
+        accountId: "100200300",
         accountName: "Savings",
       }),
     );
     await commandExecutor.executeCommand(
       ctx,
-      createCommand(CommandName.Deposit, {
-        transactionID: "t-seed-1",
-        accountID: "100200300",
+      create(DepositSchema, {
+        transactionId: "t-seed-1",
+        accountId: "100200300",
         amount: 250000n,
       }),
     );
     await commandExecutor.executeCommand(
       ctx,
-      createCommand(CommandName.OpenAccountForNewCustomer, {
-        customerID: "c-bob",
+      create(OpenAccountForNewCustomerSchema, {
+        customerId: "c-bob",
         customerName: "Bob Jones",
-        accountID: "400500600",
+        accountId: "400500600",
         accountName: "Checking",
       }),
     );

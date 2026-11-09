@@ -1598,7 +1598,7 @@ export function newEngine(app: Application, ...options: Option[]): Engine {
       const obs = createObserverGroup(oo.observers);
 
       let env: Envelope | undefined;
-      switch (m.type) {
+      switch (mt.kind) {
         case "command": {
           const cmd = m as Command;
           try {
@@ -1724,8 +1724,7 @@ export function newCommandExecutor(
       if (
         commandOrOpt &&
         typeof commandOrOpt === "object" &&
-        "type" in commandOrOpt &&
-        (commandOrOpt as any).type === "command"
+        "$typeName" in commandOrOpt
       ) {
         ctx = ctxOrCommand as Context;
         m = commandOrOpt as Command;

@@ -1,67 +1,29 @@
-import {
-  defineEvents,
-  type Event,
-  InvalidMessageError,
-} from "@/dogma/message.ts";
+import { InvalidMessageError, registerEvent } from "@/dogma/message.ts";
 import { formatAmount } from "../format.ts";
-import { DebitFailureReason } from "../transaction.ts";
+import {
+  formatDebitFailureReason,
+  isValidDebitFailureReason,
+} from "../transaction.ts";
+import {
+  type TransferApproved,
+  TransferApprovedSchema,
+  type TransferDeclined,
+  TransferDeclinedSchema,
+  type TransferFailed,
+  TransferFailedSchema,
+  type TransferStarted,
+  TransferStartedSchema,
+} from "./transfer_pb.ts";
 
-export const EventName = {
-  TransferStarted: "TransferStarted",
-  TransferApproved: "TransferApproved",
-  TransferDeclined: "TransferDeclined",
-  TransferFailed: "TransferFailed",
-} as const;
-
-// TransferStarted is an event indicating that the process of transferring funds
-// from one account to another has begun.
-export type TransferStarted = Event & {
-  name: typeof EventName.TransferStarted;
-  data: {
-    transactionID: string;
-    fromAccountID: string;
-    toAccountID: string;
-    toThirdPartyBank?: boolean;
-    amount: bigint;
-    scheduledTime: string | Date;
-  };
-};
-
-// TransferApproved is an event that indicates a requested transfer has been
-// approved.
-export type TransferApproved = Event & {
-  name: typeof EventName.TransferApproved;
-  data: {
-    transactionID: string;
-    fromAccountID: string;
-    toAccountID: string;
-    amount: bigint;
-  };
-};
-
-// TransferDeclined is an event that indicates a requested transfer has been
-// declined.
-export type TransferDeclined = Event & {
-  name: typeof EventName.TransferDeclined;
-  data: {
-    transactionID: string;
-    fromAccountID: string;
-    toAccountID: string;
-    amount: bigint;
-    reason: DebitFailureReason;
-  };
-};
-
-// TransferFailed is an event that indicates a transfer failed due to an
-// operational error after the transfer was initiated.
-export type TransferFailed = Event & {
-  name: typeof EventName.TransferFailed;
-  data: {
-    transactionID: string;
-    fromAccountID: string;
-    toAccountID: string;
-    amount: bigint;
-  };
+export {
+  type TransferApproved,
+  TransferApprovedSchema,
+  type TransferDeclined,
+  TransferDeclinedSchema,
+  type TransferFailed,
+  TransferFailedSchema,
+  type TransferStarted,
+  TransferStartedSchema,
 };
 
 export type DomainEvent =
@@ -70,51 +32,55 @@ export type DomainEvent =
   | TransferDeclined
   | TransferFailed;
 
-export const { messageCreators, messageValidators, messageDescribers } =
-  defineEvents<DomainEvent>([
-    [
-      EventName.TransferStarted,
-      "e5a7db39-861a-4a98-b109-a6f4187ac407",
-      validateTransferStarted,
-      describeTransferStarted,
-    ],
-    [
-      EventName.TransferApproved,
-      "bcc989cc-4ec7-4175-84dc-24908ac82676",
-      validateTransferApproved,
-      describeTransferApproved,
-    ],
-    [
-      EventName.TransferDeclined,
-      "0e43679a-bf5b-4730-a4a0-543e17a67479",
-      validateTransferDeclined,
-      describeTransferDeclined,
-    ],
-    [
-      EventName.TransferFailed,
-      "c6d8e9a1-2b4f-5e7c-8d0a-1f3e5c7b9d2e",
-      validateTransferFailed,
-      describeTransferFailed,
-    ],
-  ]);
+registerEvent(TransferStartedSchema, "e5a7db39-861a-4a98-b109-a6f4187ac407", {
+  validate: validateTransferStarted,
+  describe: describeTransferStarted,
+  allowIdempotent: true,
+});
 
-function validateTransferStarted({ data: m }: TransferStarted) {
-  if (m.transactionID === "") {
+registerEvent(
+  TransferApprovedSchema,
+  "bcc989cc-4ec7-4175-84dc-24908ac82676",
+  {
+    validate: validateTransferApproved,
+    describe: describeTransferApproved,
+    allowIdempotent: true,
+  },
+);
+
+registerEvent(
+  TransferDeclinedSchema,
+  "0e43679a-bf5b-4730-a4a0-543e17a67479",
+  {
+    validate: validateTransferDeclined,
+    describe: describeTransferDeclined,
+    allowIdempotent: true,
+  },
+);
+
+registerEvent(TransferFailedSchema, "c6d8e9a1-2b4f-5e7c-8d0a-1f3e5c7b9d2e", {
+  validate: validateTransferFailed,
+  describe: describeTransferFailed,
+  allowIdempotent: true,
+});
+
+function validateTransferStarted(m: TransferStarted) {
+  if (m.transactionId === "") {
     throw new InvalidMessageError(
       "TransferStarted must not have an empty transaction ID",
     );
   }
-  if (m.fromAccountID === "") {
+  if (m.fromAccountId === "") {
     throw new InvalidMessageError(
       "TransferStarted must not have an empty 'from' account ID",
     );
   }
-  if (m.toAccountID === "") {
+  if (m.toAccountId === "") {
     throw new InvalidMessageError(
       "TransferStarted must not have an empty 'to' account ID",
     );
   }
-  if (m.fromAccountID === m.toAccountID) {
+  if (m.fromAccountId === m.toAccountId) {
     throw new InvalidMessageError(
       "TransferStarted from account ID and to account ID must be different",
     );
@@ -126,23 +92,23 @@ function validateTransferStarted({ data: m }: TransferStarted) {
   }
 }
 
-function validateTransferApproved({ data: m }: TransferApproved) {
-  if (m.transactionID === "") {
+function validateTransferApproved(m: TransferApproved) {
+  if (m.transactionId === "") {
     throw new InvalidMessageError(
       "TransferApproved must not have an empty transaction ID",
     );
   }
-  if (m.fromAccountID === "") {
+  if (m.fromAccountId === "") {
     throw new InvalidMessageError(
       "TransferApproved must not have an empty 'from' account ID",
     );
   }
-  if (m.toAccountID === "") {
+  if (m.toAccountId === "") {
     throw new InvalidMessageError(
       "TransferApproved must not have an empty 'to' account ID",
     );
   }
-  if (m.fromAccountID === m.toAccountID) {
+  if (m.fromAccountId === m.toAccountId) {
     throw new InvalidMessageError(
       "TransferApproved from account ID and to account ID must be different",
     );
@@ -154,23 +120,23 @@ function validateTransferApproved({ data: m }: TransferApproved) {
   }
 }
 
-function validateTransferDeclined({ data: m }: TransferDeclined) {
-  if (m.transactionID === "") {
+function validateTransferDeclined(m: TransferDeclined) {
+  if (m.transactionId === "") {
     throw new InvalidMessageError(
       "TransferDeclined must not have an empty transaction ID",
     );
   }
-  if (m.fromAccountID === "") {
+  if (m.fromAccountId === "") {
     throw new InvalidMessageError(
       "TransferDeclined must not have an empty 'from' account ID",
     );
   }
-  if (m.toAccountID === "") {
+  if (m.toAccountId === "") {
     throw new InvalidMessageError(
       "TransferDeclined must not have an empty 'to' account ID",
     );
   }
-  if (m.fromAccountID === m.toAccountID) {
+  if (m.fromAccountId === m.toAccountId) {
     throw new InvalidMessageError(
       "TransferDeclined from account ID and to account ID must be different",
     );
@@ -180,30 +146,30 @@ function validateTransferDeclined({ data: m }: TransferDeclined) {
       "TransferDeclined must have a positive amount",
     );
   }
-  if (!Object.values(DebitFailureReason).includes(m.reason)) {
+  if (!isValidDebitFailureReason(m.reason)) {
     throw new InvalidMessageError(
       `TransferDeclined must have a valid reason: invalid debit failure reason: ${String(m.reason)}`,
     );
   }
 }
 
-function validateTransferFailed({ data: m }: TransferFailed) {
-  if (m.transactionID === "") {
+function validateTransferFailed(m: TransferFailed) {
+  if (m.transactionId === "") {
     throw new InvalidMessageError(
       "TransferFailed must not have an empty transaction ID",
     );
   }
-  if (m.fromAccountID === "") {
+  if (m.fromAccountId === "") {
     throw new InvalidMessageError(
       "TransferFailed must not have an empty 'from' account ID",
     );
   }
-  if (m.toAccountID === "") {
+  if (m.toAccountId === "") {
     throw new InvalidMessageError(
       "TransferFailed must not have an empty 'to' account ID",
     );
   }
-  if (m.fromAccountID === m.toAccountID) {
+  if (m.fromAccountId === m.toAccountId) {
     throw new InvalidMessageError(
       "TransferFailed from account ID and to account ID must be different",
     );
@@ -213,18 +179,18 @@ function validateTransferFailed({ data: m }: TransferFailed) {
   }
 }
 
-function describeTransferStarted({ data: m }: TransferStarted) {
-  return `transfer ${m.transactionID}: started transfer of ${formatAmount(m.amount)} from account ${m.fromAccountID} to account ${m.toAccountID}`;
+function describeTransferStarted(m: TransferStarted) {
+  return `transfer ${m.transactionId}: started transfer of ${formatAmount(m.amount)} from account ${m.fromAccountId} to account ${m.toAccountId}`;
 }
 
-function describeTransferApproved({ data: m }: TransferApproved) {
-  return `transfer ${m.transactionID}: approved transfer of ${formatAmount(m.amount)} from account ${m.fromAccountID} to account ${m.toAccountID}`;
+function describeTransferApproved(m: TransferApproved) {
+  return `transfer ${m.transactionId}: approved transfer of ${formatAmount(m.amount)} from account ${m.fromAccountId} to account ${m.toAccountId}`;
 }
 
-function describeTransferDeclined({ data: m }: TransferDeclined) {
-  return `transfer ${m.transactionID}: declined transfer of ${formatAmount(m.amount)} from account ${m.fromAccountID} to account ${m.toAccountID}: ${m.reason}`;
+function describeTransferDeclined(m: TransferDeclined) {
+  return `transfer ${m.transactionId}: declined transfer of ${formatAmount(m.amount)} from account ${m.fromAccountId} to account ${m.toAccountId}: ${formatDebitFailureReason(m.reason)}`;
 }
 
-function describeTransferFailed({ data: m }: TransferFailed) {
-  return `transfer ${m.transactionID}: failed transfer of ${formatAmount(m.amount)} from account ${m.fromAccountID} to account ${m.toAccountID}`;
+function describeTransferFailed(m: TransferFailed) {
+  return `transfer ${m.transactionId}: failed transfer of ${formatAmount(m.amount)} from account ${m.fromAccountId} to account ${m.toAccountId}`;
 }

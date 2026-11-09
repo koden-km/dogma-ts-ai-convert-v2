@@ -1,0 +1,43 @@
+edition = "2024";
+package dogma.example.messages.commands.v1;
+
+option features.field_presence = IMPLICIT;
+
+import "src/example/messages/transaction.proto";
+
+// Transfer is a command requesting that funds be transferred from one bank
+// account to another.
+message Transfer {
+  string transaction_id = 1;
+  string from_account_id = 2;
+  string to_account_id = 3;
+  bool to_third_party_bank = 4;
+  int64 amount = 5;
+  string scheduled_time = 6;
+}
+
+// ApproveTransfer is a command that approves an account transfer.
+message ApproveTransfer {
+  string transaction_id = 1;
+  string from_account_id = 2;
+  string to_account_id = 3;
+  int64 amount = 4;
+}
+
+// DeclineTransfer is a command that rejects an account transfer.
+message DeclineTransfer {
+  string transaction_id = 1;
+  string from_account_id = 2;
+  string to_account_id = 3;
+  int64 amount = 4;
+  dogma.example.messages.v1.DebitFailureReason reason = 5;
+}
+
+// MarkTransferAsFailed is a command that marks an account transfer as failed
+// due to an operational error that occurred after the transfer was initiated.
+message MarkTransferAsFailed {
+  string transaction_id = 1;
+  string from_account_id = 2;
+  string to_account_id = 3;
+  int64 amount = 4;
+}

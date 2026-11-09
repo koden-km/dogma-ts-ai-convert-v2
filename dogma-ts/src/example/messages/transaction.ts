@@ -1,37 +1,51 @@
-export const TransactionType = {
-  // Deposit is a deposit transaction type.
-  Deposit: "deposit",
+import {
+  DebitFailureReason,
+  DebitFailureReasonSchema,
+  TransactionType,
+  TransactionTypeSchema,
+} from "./transaction_pb.ts";
 
-  // Withdrawal is a withdrawal transaction type.
-  Withdrawal: "withdrawal",
-
-  // Transfer is a transfer transaction type.
-  Transfer: "transfer",
-} as const;
-
-// TransactionType defines types of transactions.
-export type TransactionType =
-  (typeof TransactionType)[keyof typeof TransactionType];
+export {
+  DebitFailureReason,
+  DebitFailureReasonSchema,
+  TransactionType,
+  TransactionTypeSchema,
+};
 
 // isDebit returns true if the transaction type is a debit type.
 export function isDebit(t: TransactionType): boolean {
   switch (t) {
-    case TransactionType.Withdrawal:
-    case TransactionType.Transfer:
+    case TransactionType.WITHDRAWAL:
+    case TransactionType.TRANSFER:
       return true;
+    default:
+      return false;
   }
-  return false;
 }
 
 // isValidTransactionType returns true if the transaction type is valid.
 export function isValidTransactionType(t: TransactionType): boolean {
   switch (t) {
-    case TransactionType.Deposit:
-    case TransactionType.Withdrawal:
-    case TransactionType.Transfer:
+    case TransactionType.DEPOSIT:
+    case TransactionType.WITHDRAWAL:
+    case TransactionType.TRANSFER:
       return true;
     default:
       return false;
+  }
+}
+
+// formatTransactionType returns the human-readable string for a TransactionType.
+export function formatTransactionType(t: TransactionType): string {
+  switch (t) {
+    case TransactionType.DEPOSIT:
+      return "deposit";
+    case TransactionType.WITHDRAWAL:
+      return "withdrawal";
+    case TransactionType.TRANSFER:
+      return "transfer";
+    default:
+      return String(t);
   }
 }
 
@@ -45,19 +59,28 @@ export function validateTransactionType(
   }
 }
 
-export const DebitFailureReason = {
-  // InsufficientFunds means there was not enough funds available in the
-  // account to perform the debit.
-  InsufficientFunds: "insufficient funds",
+// isValidDebitFailureReason returns true if the debit failure reason is valid.
+export function isValidDebitFailureReason(r: DebitFailureReason): boolean {
+  switch (r) {
+    case DebitFailureReason.INSUFFICIENT_FUNDS:
+    case DebitFailureReason.DAILY_DEBIT_LIMIT_EXCEEDED:
+      return true;
+    default:
+      return false;
+  }
+}
 
-  // DailyDebitLimitExceeded means that the debit cannot be performed
-  // because it will exceed the account daily debit limit.
-  DailyDebitLimitExceeded: "daily debit limit exceeded",
-} as const;
-
-// DebitFailureReason defines reasons why a debit may fail.
-export type DebitFailureReason =
-  (typeof DebitFailureReason)[keyof typeof DebitFailureReason];
+// formatDebitFailureReason returns the human-readable string for a DebitFailureReason.
+export function formatDebitFailureReason(r: DebitFailureReason): string {
+  switch (r) {
+    case DebitFailureReason.INSUFFICIENT_FUNDS:
+      return "insufficient funds";
+    case DebitFailureReason.DAILY_DEBIT_LIMIT_EXCEEDED:
+      return "daily debit limit exceeded";
+    default:
+      return String(r);
+  }
+}
 
 // dailyDebitLimitDate returns the date of a transaction for the purposes of
 // checking daily debit limits.

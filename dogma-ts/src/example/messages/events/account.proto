@@ -1,0 +1,40 @@
+edition = "2024";
+package dogma.example.messages.events.v1;
+
+option features.field_presence = IMPLICIT;
+
+import "src/example/messages/transaction.proto";
+
+// AccountOpened is an event indicating that a new bank account has been opened.
+message AccountOpened {
+  string customer_id = 1;
+  string account_id = 2;
+  string account_name = 3;
+}
+
+// AccountCredited is an event indicating that a bank account was credited.
+message AccountCredited {
+  string transaction_id = 1;
+  string account_id = 2;
+  dogma.example.messages.v1.TransactionType transaction_type = 3;
+  int64 amount = 4;
+}
+
+// AccountDebited is an event indicating that a bank account was debited.
+message AccountDebited {
+  string transaction_id = 1;
+  string account_id = 2;
+  dogma.example.messages.v1.TransactionType transaction_type = 3;
+  int64 amount = 4;
+  string scheduled_time = 5;
+}
+
+// AccountDebitDeclined is an event indicating that a bank account debit was
+// declined.
+message AccountDebitDeclined {
+  string transaction_id = 1;
+  string account_id = 2;
+  dogma.example.messages.v1.TransactionType transaction_type = 3;
+  int64 amount = 4;
+  dogma.example.messages.v1.DebitFailureReason reason = 5;
+}

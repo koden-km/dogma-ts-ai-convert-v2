@@ -1,5 +1,5 @@
 import { registerHooks } from "node:module";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
 import fs from "node:fs";
 
@@ -20,6 +20,20 @@ registerHooks({
         if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) {
           return nextResolve(pathToFileURL(candidate).href, context);
         }
+      }
+    }
+    if (
+      (specifier.startsWith("./") || specifier.startsWith("../")) &&
+      specifier.endsWith(".js") &&
+      context.parentURL?.startsWith("file:")
+    ) {
+      const parentDir = path.dirname(fileURLToPath(context.parentURL));
+      const tsCandidate = path.resolve(
+        parentDir,
+        `${specifier.slice(0, -3)}.ts`,
+      );
+      if (fs.existsSync(tsCandidate) && fs.statSync(tsCandidate).isFile()) {
+        return nextResolve(pathToFileURL(tsCandidate).href, context);
       }
     }
     return nextResolve(specifier, context);

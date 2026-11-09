@@ -9,8 +9,10 @@ import {
   UnexpectedMessageError,
 } from "@/dogma/index.ts";
 import {
+  AccountCreditedSchema,
+  AccountDebitedSchema,
+  AccountOpenedSchema,
   type DomainEvent,
-  EventName,
   TransactionType,
 } from "@/example/messages/index.ts";
 import {
@@ -29,9 +31,9 @@ function creditDescription(t: TransactionType, isRefund: boolean): string {
   }
 
   switch (t) {
-    case TransactionType.Deposit:
+    case TransactionType.DEPOSIT:
       return "Deposit";
-    case TransactionType.Transfer:
+    case TransactionType.TRANSFER:
       return "Incoming transfer";
     default:
       throw new Error(`unrecognized transaction type for credit: ${String(t)}`);
@@ -42,9 +44,9 @@ function creditDescription(t: TransactionType, isRefund: boolean): string {
 // the ledger.
 function debitDescription(t: TransactionType): string {
   switch (t) {
-    case TransactionType.Withdrawal:
+    case TransactionType.WITHDRAWAL:
       return "Withdrawal";
-    case TransactionType.Transfer:
+    case TransactionType.TRANSFER:
       return "Outgoing transfer";
     default:
       throw new Error(`unrecognized transaction type for debit: ${String(t)}`);
@@ -67,9 +69,9 @@ export const LedgerProjectionHandler: MessageHandler = {
     c.identity("ledger", "a1b2c3d4-e5f6-7890-abcd-ef1234567890");
 
     c.routes(
-      handlesEvent(EventName.AccountOpened),
-      handlesEvent(EventName.AccountCredited),
-      handlesEvent(EventName.AccountDebited),
+      handlesEvent(AccountOpenedSchema),
+      handlesEvent(AccountCreditedSchema),
+      handlesEvent(AccountDebitedSchema),
     );
   },
 
@@ -81,8 +83,8 @@ export const LedgerProjectionHandler: MessageHandler = {
   ): void {
     const e = m as DomainEvent;
 
-    switch (e.name) {
-      case EventName.AccountOpened: {
+    switch (e.$typeName) {
+      case AccountOpenedSchema.typeName: {
         const stmt = tx.prepare(`
           INSERT INTO accounts (
             id,
@@ -94,22 +96,22 @@ export const LedgerProjectionHandler: MessageHandler = {
             ?
           )
         `);
-        stmt.run(e.data.accountID, e.data.accountName, e.data.customerID);
+        stmt.run(e.accountId, e.accountName, e.customerId);
         return;
       }
 
-      case EventName.AccountCredited: {
+      case AccountCreditedSchema.typeName: {
         const updateStmt = tx.prepare(`
           UPDATE accounts SET
             balance = balance + ?
           WHERE id = ?
           RETURNING balance
         `);
-        const balRow = updateStmt.get(e.data.amount, e.data.accountID) as
+        const balRow = updateStmt.get(e.amount, e.accountId) as
           | { balance: number | bigint }
           | undefined;
         if (!balRow) {
-          throw new Error(`account ${e.data.accountID} not found`);
+          throw new Error(`account ${e.accountId} not found`);
         }
 
         const refundStmt = tx.prepare(`
@@ -121,8 +123,8 @@ export const LedgerProjectionHandler: MessageHandler = {
           ) AS is_refund
         `);
         const refundRow = refundStmt.get(
-          e.data.accountID,
-          e.data.transactionID,
+          e.accountId,
+          e.transactionId,
         ) as { is_refund: number | bigint } | undefined;
         const isRefund = Boolean(refundRow?.is_refund);
 
@@ -146,29 +148,29 @@ export const LedgerProjectionHandler: MessageHandler = {
           )
         `);
         insertStmt.run(
-          e.data.accountID,
-          e.data.transactionID,
-          e.data.transactionID,
-          creditDescription(e.data.transactionType, isRefund),
-          e.data.amount,
+          e.accountId,
+          e.transactionId,
+          e.transactionId,
+          creditDescription(e.transactionType, isRefund),
+          e.amount,
           balRow.balance,
           s.recordedAt().toISOString(),
         );
         return;
       }
 
-      case EventName.AccountDebited: {
+      case AccountDebitedSchema.typeName: {
         const updateStmt = tx.prepare(`
           UPDATE accounts SET
             balance = balance - ?
           WHERE id = ?
           RETURNING balance
         `);
-        const balRow = updateStmt.get(e.data.amount, e.data.accountID) as
+        const balRow = updateStmt.get(e.amount, e.accountId) as
           | { balance: number | bigint }
           | undefined;
         if (!balRow) {
-          throw new Error(`account ${e.data.accountID} not found`);
+          throw new Error(`account ${e.accountId} not found`);
         }
 
         const insertStmt = tx.prepare(`
@@ -191,11 +193,11 @@ export const LedgerProjectionHandler: MessageHandler = {
           )
         `);
         insertStmt.run(
-          e.data.accountID,
-          e.data.transactionID,
-          e.data.transactionID,
-          debitDescription(e.data.transactionType),
-          e.data.amount,
+          e.accountId,
+          e.transactionId,
+          e.transactionId,
+          debitDescription(e.transactionType),
+          e.amount,
           balRow.balance,
           s.recordedAt().toISOString(),
         );

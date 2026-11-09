@@ -1,0 +1,32 @@
+edition = "2024";
+package dogma.example.messages.events.v1;
+
+option features.field_presence = IMPLICIT;
+
+import "src/example/messages/transaction.proto";
+
+// WithdrawalStarted is an event indicating that the process of withdrawing
+// funds from an account has begun.
+message WithdrawalStarted {
+  string transaction_id = 1;
+  string account_id = 2;
+  int64 amount = 3;
+  string scheduled_time = 4;
+}
+
+// WithdrawalApproved is an event that indicates a requested withdrawal has been
+// approved.
+message WithdrawalApproved {
+  string transaction_id = 1;
+  string account_id = 2;
+  int64 amount = 3;
+}
+
+// WithdrawalDeclined is an event that indicates a requested withdrawal has been
+// declined.
+message WithdrawalDeclined {
+  string transaction_id = 1;
+  string account_id = 2;
+  int64 amount = 3;
+  dogma.example.messages.v1.DebitFailureReason reason = 4;
+}

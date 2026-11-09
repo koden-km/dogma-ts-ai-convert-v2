@@ -1,46 +1,31 @@
-import {
-  type Command,
-  defineCommands,
-  InvalidMessageError,
-} from "@/dogma/message.ts";
+import { InvalidMessageError, registerCommand } from "@/dogma/message.ts";
 import { formatAmount } from "../format.ts";
+import {
+  type CreditThirdPartyAccount,
+  CreditThirdPartyAccountSchema,
+} from "./third-party-credit_pb.ts";
 
-export const CommandName = {
-  CreditThirdPartyAccount: "CreditThirdPartyAccount",
-} as const;
-
-// CreditThirdPartyAccount is a command to credit an account held at a
-// third-party bank.
-export type CreditThirdPartyAccount = Command & {
-  name: typeof CommandName.CreditThirdPartyAccount;
-  data: {
-    transactionID: string;
-    accountID: string;
-    amount: bigint;
-  };
-};
+export { type CreditThirdPartyAccount, CreditThirdPartyAccountSchema };
 
 export type DomainCommand = CreditThirdPartyAccount;
 
-export const { messageCreators, messageValidators, messageDescribers } =
-  defineCommands<DomainCommand>([
-    [
-      CommandName.CreditThirdPartyAccount,
-      "c4a2e6f1-8b3d-4e7a-9f5c-2d1b0e8a3c6f",
-      validateCreditThirdPartyAccount,
-      describeCreditThirdPartyAccount,
-    ],
-  ]);
+registerCommand(
+  CreditThirdPartyAccountSchema,
+  "c4a2e6f1-8b3d-4e7a-9f5c-2d1b0e8a3c6f",
+  {
+    validate: validateCreditThirdPartyAccount,
+    describe: describeCreditThirdPartyAccount,
+    allowIdempotent: true,
+  },
+);
 
-function validateCreditThirdPartyAccount({
-  data: m,
-}: CreditThirdPartyAccount) {
-  if (m.transactionID === "") {
+function validateCreditThirdPartyAccount(m: CreditThirdPartyAccount) {
+  if (m.transactionId === "") {
     throw new InvalidMessageError(
       "CreditThirdPartyAccount must not have an empty transaction ID",
     );
   }
-  if (m.accountID === "") {
+  if (m.accountId === "") {
     throw new InvalidMessageError(
       "CreditThirdPartyAccount must not have an empty account ID",
     );
@@ -52,8 +37,6 @@ function validateCreditThirdPartyAccount({
   }
 }
 
-function describeCreditThirdPartyAccount({
-  data: m,
-}: CreditThirdPartyAccount) {
-  return `transfer ${m.transactionID}: crediting ${formatAmount(m.amount)} to third-party account ${m.accountID}`;
+function describeCreditThirdPartyAccount(m: CreditThirdPartyAccount) {
+  return `transfer ${m.transactionId}: crediting ${formatAmount(m.amount)} to third-party account ${m.accountId}`;
 }

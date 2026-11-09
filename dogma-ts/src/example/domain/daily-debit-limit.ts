@@ -4,6 +4,7 @@ import {
   type AggregateMessageHandler,
   type AggregateRoot,
   type Command,
+  create,
   type Event,
   handlesCommand,
   NoSnapshotBehavior,
@@ -11,12 +12,11 @@ import {
   UnexpectedMessageError,
 } from "@/dogma/index.ts";
 import {
-  CommandName,
-  type ConsumeDailyDebitLimit,
-  createEvent,
+  ConsumeDailyDebitLimitSchema,
+  DailyDebitLimitConsumedSchema,
+  DailyDebitLimitExceededSchema,
   type DomainCommand,
   type DomainEvent,
-  EventName,
   formatAmount,
 } from "../messages/index.ts";
 
@@ -43,11 +43,9 @@ export const DailyDebitLimitHandler: AggregateMessageHandler<DailyDebitLimit> =
       c.identity("daily-debit-limit", "238c5a7b-b51d-42d8-ac8d-a8c81b780230");
 
       c.routes(
-        handlesCommand<ConsumeDailyDebitLimit>(
-          CommandName.ConsumeDailyDebitLimit,
-        ),
-        recordsEvent(EventName.DailyDebitLimitConsumed),
-        recordsEvent(EventName.DailyDebitLimitExceeded),
+        handlesCommand(ConsumeDailyDebitLimitSchema),
+        recordsEvent(DailyDebitLimitConsumedSchema),
+        recordsEvent(DailyDebitLimitExceededSchema),
       );
     },
 
@@ -63,18 +61,18 @@ export const DailyDebitLimitHandler: AggregateMessageHandler<DailyDebitLimit> =
 
     applyEvent(r: DailyDebitLimit, e: Event): void {
       const m = e as DomainEvent;
-      switch (m.name) {
-        case EventName.DailyDebitLimitConsumed:
-          r.totalDebitsForDay = m.data.totalDebitsForDay;
+      switch (m.$typeName) {
+        case DailyDebitLimitConsumedSchema.typeName:
+          r.totalDebitsForDay = m.totalDebitsForDay;
           break;
       }
     },
 
     routeCommandToInstance(c: Command): string {
       const m = c as DomainCommand;
-      switch (m.name) {
-        case CommandName.ConsumeDailyDebitLimit:
-          return `${m.data.date}:${m.data.accountID}`;
+      switch (m.$typeName) {
+        case ConsumeDailyDebitLimitSchema.typeName:
+          return `${m.date}:${m.accountId}`;
         default:
           throw new UnexpectedMessageError();
       }
@@ -86,29 +84,29 @@ export const DailyDebitLimitHandler: AggregateMessageHandler<DailyDebitLimit> =
       c: Command,
     ): void {
       const m = c as DomainCommand;
-      switch (m.name) {
-        case CommandName.ConsumeDailyDebitLimit:
-          if (r.totalDebitsForDay + m.data.amount > maximumDailyDebitLimit) {
+      switch (m.$typeName) {
+        case ConsumeDailyDebitLimitSchema.typeName:
+          if (r.totalDebitsForDay + m.amount > maximumDailyDebitLimit) {
             s.recordEvent(
-              createEvent(EventName.DailyDebitLimitExceeded, {
-                transactionID: m.data.transactionID,
-                accountID: m.data.accountID,
-                debitType: m.data.debitType,
-                amount: m.data.amount,
-                date: m.data.date,
+              create(DailyDebitLimitExceededSchema, {
+                transactionId: m.transactionId,
+                accountId: m.accountId,
+                debitType: m.debitType,
+                amount: m.amount,
+                date: m.date,
                 totalDebitsForDay: r.totalDebitsForDay,
                 dailyLimit: maximumDailyDebitLimit,
               }),
             );
           } else {
             s.recordEvent(
-              createEvent(EventName.DailyDebitLimitConsumed, {
-                transactionID: m.data.transactionID,
-                accountID: m.data.accountID,
-                debitType: m.data.debitType,
-                amount: m.data.amount,
-                date: m.data.date,
-                totalDebitsForDay: r.totalDebitsForDay + m.data.amount,
+              create(DailyDebitLimitConsumedSchema, {
+                transactionId: m.transactionId,
+                accountId: m.accountId,
+                debitType: m.debitType,
+                amount: m.amount,
+                date: m.date,
+                totalDebitsForDay: r.totalDebitsForDay + m.amount,
                 dailyLimit: maximumDailyDebitLimit,
               }),
             );

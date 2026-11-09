@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { create } from "@/dogma/index.ts";
 import { newApp } from "@/example/app.ts";
-import { CommandName, createCommand } from "@/example/messages/index.ts";
+import {
+  DepositSchema,
+  OpenAccountForNewCustomerSchema,
+  TransferSchema,
+  WithdrawSchema,
+} from "@/example/messages/index.ts";
 import { mustNewDB } from "@/example/ui/projections/index.ts";
 import { begin, executeCommand } from "@/testkit/index.ts";
 
@@ -12,10 +18,10 @@ describe("LedgerProjectionHandler", () => {
         .enableHandlers("ledger")
         .prepare(
           executeCommand(
-            createCommand(CommandName.OpenAccountForNewCustomer, {
-              customerID: "C001",
+            create(OpenAccountForNewCustomerSchema, {
+              customerId: "C001",
               customerName: "Anna Smith",
-              accountID: "A001",
+              accountId: "A001",
               accountName: "Savings",
             }),
           ),
@@ -51,17 +57,17 @@ describe("LedgerProjectionHandler", () => {
         .enableHandlers("ledger")
         .prepare(
           executeCommand(
-            createCommand(CommandName.OpenAccountForNewCustomer, {
-              customerID: "C001",
+            create(OpenAccountForNewCustomerSchema, {
+              customerId: "C001",
               customerName: "Anna Smith",
-              accountID: "A001",
+              accountId: "A001",
               accountName: "Savings",
             }),
           ),
           executeCommand(
-            createCommand(CommandName.Deposit, {
-              transactionID: "T001",
-              accountID: "A001",
+            create(DepositSchema, {
+              transactionId: "T001",
+              accountId: "A001",
               amount: 150n,
             }),
           ),
@@ -114,26 +120,26 @@ describe("LedgerProjectionHandler", () => {
         .enableHandlers("ledger")
         .prepare(
           executeCommand(
-            createCommand(CommandName.OpenAccountForNewCustomer, {
-              customerID: "C001",
+            create(OpenAccountForNewCustomerSchema, {
+              customerId: "C001",
               customerName: "Anna Smith",
-              accountID: "A001",
+              accountId: "A001",
               accountName: "Savings",
             }),
           ),
           executeCommand(
-            createCommand(CommandName.Deposit, {
-              transactionID: "T001",
-              accountID: "A001",
+            create(DepositSchema, {
+              transactionId: "T001",
+              accountId: "A001",
               amount: 500n,
             }),
           ),
           executeCommand(
-            createCommand(CommandName.Withdraw, {
-              transactionID: "T002",
-              accountID: "A001",
+            create(WithdrawSchema, {
+              transactionId: "T002",
+              accountId: "A001",
               amount: 150n,
-              scheduledTime: new Date("2001-02-03T00:00:00Z"),
+              scheduledTime: "2001-02-03T00:00:00Z",
             }),
           ),
         );
@@ -186,36 +192,36 @@ describe("LedgerProjectionHandler", () => {
         .enableHandlers("ledger")
         .prepare(
           executeCommand(
-            createCommand(CommandName.OpenAccountForNewCustomer, {
-              customerID: "C001",
+            create(OpenAccountForNewCustomerSchema, {
+              customerId: "C001",
               customerName: "Anna Smith",
-              accountID: "A001",
+              accountId: "A001",
               accountName: "Savings",
             }),
           ),
           executeCommand(
-            createCommand(CommandName.OpenAccountForNewCustomer, {
-              customerID: "C002",
+            create(OpenAccountForNewCustomerSchema, {
+              customerId: "C002",
               customerName: "Bob Jones",
-              accountID: "A002",
+              accountId: "A002",
               accountName: "Checking",
             }),
           ),
           executeCommand(
-            createCommand(CommandName.Deposit, {
-              transactionID: "T001",
-              accountID: "A001",
+            create(DepositSchema, {
+              transactionId: "T001",
+              accountId: "A001",
               amount: 500n,
             }),
           ),
           executeCommand(
-            createCommand(CommandName.Transfer, {
-              transactionID: "T002",
-              fromAccountID: "A001",
-              toAccountID: "A002",
+            create(TransferSchema, {
+              transactionId: "T002",
+              fromAccountId: "A001",
+              toAccountId: "A002",
               amount: 200n,
               toThirdPartyBank: false,
-              scheduledTime: new Date("2001-02-03T00:00:00Z"),
+              scheduledTime: "2001-02-03T00:00:00Z",
             }),
           ),
         );
@@ -255,36 +261,36 @@ describe("LedgerProjectionHandler", () => {
         .enableHandlers("ledger")
         .prepare(
           executeCommand(
-            createCommand(CommandName.OpenAccountForNewCustomer, {
-              customerID: "C001",
+            create(OpenAccountForNewCustomerSchema, {
+              customerId: "C001",
               customerName: "Anna Smith",
-              accountID: "A001",
+              accountId: "A001",
               accountName: "Savings",
             }),
           ),
           executeCommand(
-            createCommand(CommandName.OpenAccountForNewCustomer, {
-              customerID: "C002",
+            create(OpenAccountForNewCustomerSchema, {
+              customerId: "C002",
               customerName: "Bob Jones",
-              accountID: "A002",
+              accountId: "A002",
               accountName: "Checking",
             }),
           ),
           executeCommand(
-            createCommand(CommandName.Deposit, {
-              transactionID: "T001",
-              accountID: "A001",
+            create(DepositSchema, {
+              transactionId: "T001",
+              accountId: "A001",
               amount: 1000000n,
             }),
           ),
           executeCommand(
-            createCommand(CommandName.Transfer, {
-              transactionID: "T002",
-              fromAccountID: "A001",
-              toAccountID: "A002",
+            create(TransferSchema, {
+              transactionId: "T002",
+              fromAccountId: "A001",
+              toAccountId: "A002",
               amount: 900001n,
               toThirdPartyBank: false,
-              scheduledTime: new Date("2001-02-03T00:00:00Z"),
+              scheduledTime: "2001-02-03T00:00:00Z",
             }),
           ),
         );

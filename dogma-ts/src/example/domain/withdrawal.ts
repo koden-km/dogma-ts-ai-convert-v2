@@ -1,5 +1,6 @@
 import {
   type Context,
+  create,
   type Event,
   executesCommand,
   handlesEvent,
@@ -12,13 +13,23 @@ import {
   UnexpectedMessageError,
 } from "@/dogma/index.ts";
 import {
-  CommandName,
-  createCommand,
-  dailyDebitLimitDate,
+  AccountCreditedSchema,
+  AccountDebitDeclinedSchema,
+  AccountDebitedSchema,
+  ApproveWithdrawalSchema,
+  ConsumeDailyDebitLimitSchema,
+  CreditAccountSchema,
+  DailyDebitLimitConsumedSchema,
+  DailyDebitLimitExceededSchema,
+  DebitAccountSchema,
   DebitFailureReason,
+  DeclineWithdrawalSchema,
   type DomainEvent,
-  EventName,
+  dailyDebitLimitDate,
   TransactionType,
+  WithdrawalApprovedSchema,
+  WithdrawalDeclinedSchema,
+  WithdrawalStartedSchema,
 } from "../messages/index.ts";
 
 // WithdrawalProcessHandler manages the process of withdrawing funds from an
@@ -32,55 +43,55 @@ export const WithdrawalProcessHandler: ProcessMessageHandler<StatelessProcessRoo
       c.identity("withdrawal", "23f70d2b-a289-4e0f-8a83-c0c6a69d11d9");
 
       c.routes(
-        handlesEvent(EventName.WithdrawalStarted),
-        handlesEvent(EventName.AccountDebited),
-        handlesEvent(EventName.AccountDebitDeclined),
-        handlesEvent(EventName.DailyDebitLimitConsumed),
-        handlesEvent(EventName.DailyDebitLimitExceeded),
-        handlesEvent(EventName.AccountCredited),
-        handlesEvent(EventName.WithdrawalApproved),
-        handlesEvent(EventName.WithdrawalDeclined),
-        executesCommand(CommandName.DebitAccount),
-        executesCommand(CommandName.ConsumeDailyDebitLimit),
-        executesCommand(CommandName.CreditAccount),
-        executesCommand(CommandName.ApproveWithdrawal),
-        executesCommand(CommandName.DeclineWithdrawal),
+        handlesEvent(WithdrawalStartedSchema),
+        handlesEvent(AccountDebitedSchema),
+        handlesEvent(AccountDebitDeclinedSchema),
+        handlesEvent(DailyDebitLimitConsumedSchema),
+        handlesEvent(DailyDebitLimitExceededSchema),
+        handlesEvent(AccountCreditedSchema),
+        handlesEvent(WithdrawalApprovedSchema),
+        handlesEvent(WithdrawalDeclinedSchema),
+        executesCommand(DebitAccountSchema),
+        executesCommand(ConsumeDailyDebitLimitSchema),
+        executesCommand(CreditAccountSchema),
+        executesCommand(ApproveWithdrawalSchema),
+        executesCommand(DeclineWithdrawalSchema),
       );
     },
 
     routeEventToInstance(_ctx: Context, e: Event): [string, boolean] {
       const m = e as DomainEvent;
-      switch (m.name) {
-        case EventName.WithdrawalStarted:
-          return [m.data.transactionID, true];
-        case EventName.AccountDebited:
+      switch (m.$typeName) {
+        case WithdrawalStartedSchema.typeName:
+          return [m.transactionId, true];
+        case AccountDebitedSchema.typeName:
           return [
-            m.data.transactionID,
-            m.data.transactionType === TransactionType.Withdrawal,
+            m.transactionId,
+            m.transactionType === TransactionType.WITHDRAWAL,
           ];
-        case EventName.AccountDebitDeclined:
+        case AccountDebitDeclinedSchema.typeName:
           return [
-            m.data.transactionID,
-            m.data.transactionType === TransactionType.Withdrawal,
+            m.transactionId,
+            m.transactionType === TransactionType.WITHDRAWAL,
           ];
-        case EventName.DailyDebitLimitConsumed:
+        case DailyDebitLimitConsumedSchema.typeName:
           return [
-            m.data.transactionID,
-            m.data.debitType === TransactionType.Withdrawal,
+            m.transactionId,
+            m.debitType === TransactionType.WITHDRAWAL,
           ];
-        case EventName.DailyDebitLimitExceeded:
+        case DailyDebitLimitExceededSchema.typeName:
           return [
-            m.data.transactionID,
-            m.data.debitType === TransactionType.Withdrawal,
+            m.transactionId,
+            m.debitType === TransactionType.WITHDRAWAL,
           ];
-        case EventName.AccountCredited:
+        case AccountCreditedSchema.typeName:
           return [
-            m.data.transactionID,
-            m.data.transactionType === TransactionType.Withdrawal,
+            m.transactionId,
+            m.transactionType === TransactionType.WITHDRAWAL,
           ];
-        case EventName.WithdrawalApproved:
-        case EventName.WithdrawalDeclined:
-          return [m.data.transactionID, true];
+        case WithdrawalApprovedSchema.typeName:
+        case WithdrawalDeclinedSchema.typeName:
+          return [m.transactionId, true];
         default:
           throw new UnexpectedMessageError();
       }
@@ -93,76 +104,76 @@ export const WithdrawalProcessHandler: ProcessMessageHandler<StatelessProcessRoo
       e: Event,
     ): void {
       const m = e as DomainEvent;
-      switch (m.name) {
-        case EventName.WithdrawalStarted:
+      switch (m.$typeName) {
+        case WithdrawalStartedSchema.typeName:
           s.executeCommand(
-            createCommand(CommandName.DebitAccount, {
-              transactionID: m.data.transactionID,
-              accountID: m.data.accountID,
-              transactionType: TransactionType.Withdrawal,
-              amount: m.data.amount,
-              scheduledTime: m.data.scheduledTime,
+            create(DebitAccountSchema, {
+              transactionId: m.transactionId,
+              accountId: m.accountId,
+              transactionType: TransactionType.WITHDRAWAL,
+              amount: m.amount,
+              scheduledTime: m.scheduledTime,
             }),
           );
           return;
 
-        case EventName.AccountDebited:
+        case AccountDebitedSchema.typeName:
           s.executeCommand(
-            createCommand(CommandName.ConsumeDailyDebitLimit, {
-              transactionID: m.data.transactionID,
-              accountID: m.data.accountID,
-              debitType: TransactionType.Withdrawal,
-              amount: m.data.amount,
-              date: dailyDebitLimitDate(m.data.scheduledTime),
+            create(ConsumeDailyDebitLimitSchema, {
+              transactionId: m.transactionId,
+              accountId: m.accountId,
+              debitType: TransactionType.WITHDRAWAL,
+              amount: m.amount,
+              date: dailyDebitLimitDate(m.scheduledTime),
             }),
           );
           return;
 
-        case EventName.AccountDebitDeclined:
+        case AccountDebitDeclinedSchema.typeName:
           s.executeCommand(
-            createCommand(CommandName.DeclineWithdrawal, {
-              transactionID: m.data.transactionID,
-              accountID: m.data.accountID,
-              amount: m.data.amount,
-              reason: m.data.reason,
+            create(DeclineWithdrawalSchema, {
+              transactionId: m.transactionId,
+              accountId: m.accountId,
+              amount: m.amount,
+              reason: m.reason,
             }),
           );
           return;
 
-        case EventName.DailyDebitLimitConsumed:
+        case DailyDebitLimitConsumedSchema.typeName:
           s.executeCommand(
-            createCommand(CommandName.ApproveWithdrawal, {
-              transactionID: m.data.transactionID,
-              accountID: m.data.accountID,
-              amount: m.data.amount,
+            create(ApproveWithdrawalSchema, {
+              transactionId: m.transactionId,
+              accountId: m.accountId,
+              amount: m.amount,
             }),
           );
           return;
 
-        case EventName.DailyDebitLimitExceeded:
+        case DailyDebitLimitExceededSchema.typeName:
           s.executeCommand(
-            createCommand(CommandName.CreditAccount, {
-              transactionID: m.data.transactionID,
-              accountID: m.data.accountID,
-              transactionType: TransactionType.Withdrawal,
-              amount: m.data.amount,
+            create(CreditAccountSchema, {
+              transactionId: m.transactionId,
+              accountId: m.accountId,
+              transactionType: TransactionType.WITHDRAWAL,
+              amount: m.amount,
             }),
           );
           return;
 
-        case EventName.AccountCredited:
+        case AccountCreditedSchema.typeName:
           s.executeCommand(
-            createCommand(CommandName.DeclineWithdrawal, {
-              transactionID: m.data.transactionID,
-              accountID: m.data.accountID,
-              amount: m.data.amount,
-              reason: DebitFailureReason.DailyDebitLimitExceeded,
+            create(DeclineWithdrawalSchema, {
+              transactionId: m.transactionId,
+              accountId: m.accountId,
+              amount: m.amount,
+              reason: DebitFailureReason.DAILY_DEBIT_LIMIT_EXCEEDED,
             }),
           );
           return;
 
-        case EventName.WithdrawalApproved:
-        case EventName.WithdrawalDeclined:
+        case WithdrawalApprovedSchema.typeName:
+        case WithdrawalDeclinedSchema.typeName:
           s.end();
           return;
 

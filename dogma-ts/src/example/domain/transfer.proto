@@ -1,0 +1,10 @@
+edition = "2024";
+package dogma.example.domain.v1;
+
+option features.field_presence = IMPLICIT;
+
+// TransferReadyToProceed is a deadline message notifying that the transfer is
+// ready to proceed.
+message TransferReadyToProceed {
+  string transaction_id = 1;
+}

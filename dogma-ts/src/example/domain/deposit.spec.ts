@@ -1,10 +1,12 @@
 import { describe, it } from "vitest";
+import { create } from "@/dogma/index.ts";
 import { newApp } from "@/example/app.ts";
 import {
-  CommandName,
-  createCommand,
-  createEvent,
-  EventName,
+  DepositApprovedSchema,
+  DepositSchema,
+  OpenAccountSchema,
+  WithdrawalApprovedSchema,
+  WithdrawSchema,
 } from "@/example/messages/index.ts";
 import { begin, executeCommand, toRecordEvent } from "@/testkit/index.ts";
 
@@ -14,25 +16,25 @@ describe("Deposit", () => {
       begin(newApp())
         .prepare(
           executeCommand(
-            createCommand(CommandName.OpenAccount, {
-              customerID: "C001",
-              accountID: "A001",
+            create(OpenAccountSchema, {
+              customerId: "C001",
+              accountId: "A001",
               accountName: "Anna Smith",
             }),
           ),
         )
         .expect(
           executeCommand(
-            createCommand(CommandName.Deposit, {
-              transactionID: "T001",
-              accountID: "A001",
+            create(DepositSchema, {
+              transactionId: "T001",
+              accountId: "A001",
               amount: 500n,
             }),
           ),
           toRecordEvent(
-            createEvent(EventName.DepositApproved, {
-              transactionID: "T001",
-              accountID: "A001",
+            create(DepositApprovedSchema, {
+              transactionId: "T001",
+              accountId: "A001",
               amount: 500n,
             }),
           ),
@@ -40,17 +42,17 @@ describe("Deposit", () => {
         // verify that funds are available
         .expect(
           executeCommand(
-            createCommand(CommandName.Withdraw, {
-              transactionID: "W001",
-              accountID: "A001",
+            create(WithdrawSchema, {
+              transactionId: "W001",
+              accountId: "A001",
               amount: 100n,
-              scheduledTime: new Date("2001-02-03T00:00:00Z"),
+              scheduledTime: "2001-02-03T00:00:00Z",
             }),
           ),
           toRecordEvent(
-            createEvent(EventName.WithdrawalApproved, {
-              transactionID: "W001",
-              accountID: "A001",
+            create(WithdrawalApprovedSchema, {
+              transactionId: "W001",
+              accountId: "A001",
               amount: 100n,
             }),
           ),

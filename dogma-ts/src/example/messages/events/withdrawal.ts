@@ -1,50 +1,25 @@
-import {
-  defineEvents,
-  type Event,
-  InvalidMessageError,
-} from "@/dogma/message.ts";
+import { InvalidMessageError, registerEvent } from "@/dogma/message.ts";
 import { formatAmount } from "../format.ts";
-import { DebitFailureReason } from "../transaction.ts";
+import {
+  formatDebitFailureReason,
+  isValidDebitFailureReason,
+} from "../transaction.ts";
+import {
+  type WithdrawalApproved,
+  WithdrawalApprovedSchema,
+  type WithdrawalDeclined,
+  WithdrawalDeclinedSchema,
+  type WithdrawalStarted,
+  WithdrawalStartedSchema,
+} from "./withdrawal_pb.ts";
 
-export const EventName = {
-  WithdrawalStarted: "WithdrawalStarted",
-  WithdrawalApproved: "WithdrawalApproved",
-  WithdrawalDeclined: "WithdrawalDeclined",
-} as const;
-
-// WithdrawalStarted is an event indicating that the process of withdrawing
-// funds from an account has begun.
-export type WithdrawalStarted = Event & {
-  name: typeof EventName.WithdrawalStarted;
-  data: {
-    transactionID: string;
-    accountID: string;
-    amount: bigint;
-    scheduledTime: string | Date;
-  };
-};
-
-// WithdrawalApproved is an event that indicates a requested withdrawal has been
-// approved.
-export type WithdrawalApproved = Event & {
-  name: typeof EventName.WithdrawalApproved;
-  data: {
-    transactionID: string;
-    accountID: string;
-    amount: bigint;
-  };
-};
-
-// WithdrawalDeclined is an event that indicates a requested withdrawal has been
-// declined.
-export type WithdrawalDeclined = Event & {
-  name: typeof EventName.WithdrawalDeclined;
-  data: {
-    transactionID: string;
-    accountID: string;
-    amount: bigint;
-    reason: DebitFailureReason;
-  };
+export {
+  type WithdrawalApproved,
+  WithdrawalApprovedSchema,
+  type WithdrawalDeclined,
+  WithdrawalDeclinedSchema,
+  type WithdrawalStarted,
+  WithdrawalStartedSchema,
 };
 
 export type DomainEvent =
@@ -52,35 +27,43 @@ export type DomainEvent =
   | WithdrawalApproved
   | WithdrawalDeclined;
 
-export const { messageCreators, messageValidators, messageDescribers } =
-  defineEvents<DomainEvent>([
-    [
-      EventName.WithdrawalStarted,
-      "ae327c68-3de9-4fe1-aa39-c4830200602c",
-      validateWithdrawalStarted,
-      describeWithdrawalStarted,
-    ],
-    [
-      EventName.WithdrawalApproved,
-      "8551621a-ef28-42aa-b815-d5a448299d38",
-      validateWithdrawalApproved,
-      describeWithdrawalApproved,
-    ],
-    [
-      EventName.WithdrawalDeclined,
-      "a87f5f6f-52ec-4eeb-954f-2af97a165181",
-      validateWithdrawalDeclined,
-      describeWithdrawalDeclined,
-    ],
-  ]);
+registerEvent(
+  WithdrawalStartedSchema,
+  "ae327c68-3de9-4fe1-aa39-c4830200602c",
+  {
+    validate: validateWithdrawalStarted,
+    describe: describeWithdrawalStarted,
+    allowIdempotent: true,
+  },
+);
 
-function validateWithdrawalStarted({ data: m }: WithdrawalStarted) {
-  if (m.transactionID === "") {
+registerEvent(
+  WithdrawalApprovedSchema,
+  "8551621a-ef28-42aa-b815-d5a448299d38",
+  {
+    validate: validateWithdrawalApproved,
+    describe: describeWithdrawalApproved,
+    allowIdempotent: true,
+  },
+);
+
+registerEvent(
+  WithdrawalDeclinedSchema,
+  "a87f5f6f-52ec-4eeb-954f-2af97a165181",
+  {
+    validate: validateWithdrawalDeclined,
+    describe: describeWithdrawalDeclined,
+    allowIdempotent: true,
+  },
+);
+
+function validateWithdrawalStarted(m: WithdrawalStarted) {
+  if (m.transactionId === "") {
     throw new InvalidMessageError(
       "WithdrawalStarted must not have an empty transaction ID",
     );
   }
-  if (m.accountID === "") {
+  if (m.accountId === "") {
     throw new InvalidMessageError(
       "WithdrawalStarted must not have an empty account ID",
     );
@@ -92,13 +75,13 @@ function validateWithdrawalStarted({ data: m }: WithdrawalStarted) {
   }
 }
 
-function validateWithdrawalApproved({ data: m }: WithdrawalApproved) {
-  if (m.transactionID === "") {
+function validateWithdrawalApproved(m: WithdrawalApproved) {
+  if (m.transactionId === "") {
     throw new InvalidMessageError(
       "WithdrawalApproved must not have an empty transaction ID",
     );
   }
-  if (m.accountID === "") {
+  if (m.accountId === "") {
     throw new InvalidMessageError(
       "WithdrawalApproved must not have an empty account ID",
     );
@@ -110,13 +93,13 @@ function validateWithdrawalApproved({ data: m }: WithdrawalApproved) {
   }
 }
 
-function validateWithdrawalDeclined({ data: m }: WithdrawalDeclined) {
-  if (m.transactionID === "") {
+function validateWithdrawalDeclined(m: WithdrawalDeclined) {
+  if (m.transactionId === "") {
     throw new InvalidMessageError(
       "WithdrawalDeclined must not have an empty transaction ID",
     );
   }
-  if (m.accountID === "") {
+  if (m.accountId === "") {
     throw new InvalidMessageError(
       "WithdrawalDeclined must not have an empty account ID",
     );
@@ -126,21 +109,21 @@ function validateWithdrawalDeclined({ data: m }: WithdrawalDeclined) {
       "WithdrawalDeclined must have a positive amount",
     );
   }
-  if (!Object.values(DebitFailureReason).includes(m.reason)) {
+  if (!isValidDebitFailureReason(m.reason)) {
     throw new InvalidMessageError(
       `WithdrawalDeclined must have a valid reason: invalid debit failure reason: ${String(m.reason)}`,
     );
   }
 }
 
-function describeWithdrawalStarted({ data: m }: WithdrawalStarted) {
-  return `withdrawal ${m.transactionID}: started withdrawal of ${formatAmount(m.amount)} from account ${m.accountID}`;
+function describeWithdrawalStarted(m: WithdrawalStarted) {
+  return `withdrawal ${m.transactionId}: started withdrawal of ${formatAmount(m.amount)} from account ${m.accountId}`;
 }
 
-function describeWithdrawalApproved({ data: m }: WithdrawalApproved) {
-  return `withdrawal ${m.transactionID}: approved withdrawal of ${formatAmount(m.amount)} from account ${m.accountID}`;
+function describeWithdrawalApproved(m: WithdrawalApproved) {
+  return `withdrawal ${m.transactionId}: approved withdrawal of ${formatAmount(m.amount)} from account ${m.accountId}`;
 }
 
-function describeWithdrawalDeclined({ data: m }: WithdrawalDeclined) {
-  return `withdrawal ${m.transactionID}: declined withdrawal of ${formatAmount(m.amount)} from account ${m.accountID}: ${m.reason}`;
+function describeWithdrawalDeclined(m: WithdrawalDeclined) {
+  return `withdrawal ${m.transactionId}: declined withdrawal of ${formatAmount(m.amount)} from account ${m.accountId}: ${formatDebitFailureReason(m.reason)}`;
 }

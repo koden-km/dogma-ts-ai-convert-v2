@@ -1,76 +1,54 @@
-import {
-  defineEvents,
-  type Event,
-  InvalidMessageError,
-} from "@/dogma/message.ts";
+import { InvalidMessageError, registerEvent } from "@/dogma/message.ts";
 import { formatAmount } from "../format.ts";
 import { isValidDate } from "../internal/validation/validation.ts";
 import {
+  formatTransactionType,
   isDebit,
   isValidTransactionType,
-  type TransactionType,
 } from "../transaction.ts";
+import {
+  type DailyDebitLimitConsumed,
+  DailyDebitLimitConsumedSchema,
+  type DailyDebitLimitExceeded,
+  DailyDebitLimitExceededSchema,
+} from "./dailydebitlimit_pb.ts";
 
-export const EventName = {
-  DailyDebitLimitConsumed: "DailyDebitLimitConsumed",
-  DailyDebitLimitExceeded: "DailyDebitLimitExceeded",
-} as const;
-
-// DailyDebitLimitConsumed is an event that indicates an amount of an account
-// daily debit limit has been consumed.
-export type DailyDebitLimitConsumed = Event & {
-  name: typeof EventName.DailyDebitLimitConsumed;
-  data: {
-    transactionID: string;
-    accountID: string;
-    debitType: TransactionType;
-    amount: bigint;
-    date: string;
-    totalDebitsForDay: bigint;
-    dailyLimit: bigint;
-  };
-};
-
-// DailyDebitLimitExceeded is an event that indicates an attempt to consume from
-// an account daily debit limit has been rejected due to reaching the limit.
-export type DailyDebitLimitExceeded = Event & {
-  name: typeof EventName.DailyDebitLimitExceeded;
-  data: {
-    transactionID: string;
-    accountID: string;
-    debitType: TransactionType;
-    amount: bigint;
-    date: string;
-    totalDebitsForDay: bigint;
-    dailyLimit: bigint;
-  };
+export {
+  type DailyDebitLimitConsumed,
+  DailyDebitLimitConsumedSchema,
+  type DailyDebitLimitExceeded,
+  DailyDebitLimitExceededSchema,
 };
 
 export type DomainEvent = DailyDebitLimitConsumed | DailyDebitLimitExceeded;
 
-export const { messageCreators, messageValidators, messageDescribers } =
-  defineEvents<DomainEvent>([
-    [
-      EventName.DailyDebitLimitConsumed,
-      "9b4a1114-817e-42d1-963d-ba6324dd07b2",
-      validateDailyDebitLimitConsumed,
-      describeDailyDebitLimitConsumed,
-    ],
-    [
-      EventName.DailyDebitLimitExceeded,
-      "83c5315e-440d-4d70-a6c8-41f97edc226f",
-      validateDailyDebitLimitExceeded,
-      describeDailyDebitLimitExceeded,
-    ],
-  ]);
+registerEvent(
+  DailyDebitLimitConsumedSchema,
+  "9b4a1114-817e-42d1-963d-ba6324dd07b2",
+  {
+    validate: validateDailyDebitLimitConsumed,
+    describe: describeDailyDebitLimitConsumed,
+    allowIdempotent: true,
+  },
+);
 
-function validateDailyDebitLimitConsumed({ data: m }: DailyDebitLimitConsumed) {
-  if (m.transactionID === "") {
+registerEvent(
+  DailyDebitLimitExceededSchema,
+  "83c5315e-440d-4d70-a6c8-41f97edc226f",
+  {
+    validate: validateDailyDebitLimitExceeded,
+    describe: describeDailyDebitLimitExceeded,
+    allowIdempotent: true,
+  },
+);
+
+function validateDailyDebitLimitConsumed(m: DailyDebitLimitConsumed) {
+  if (m.transactionId === "") {
     throw new InvalidMessageError(
       "DailyDebitLimitConsumed must not have an empty transaction ID",
     );
   }
-  if (m.accountID === "") {
+  if (m.accountId === "") {
     throw new InvalidMessageError(
       "DailyDebitLimitConsumed must not have an empty account ID",
     );
@@ -107,13 +85,13 @@ function validateDailyDebitLimitConsumed({ data: m }: DailyDebitLimitConsumed) {
   }
 }
 
-function validateDailyDebitLimitExceeded({ data: m }: DailyDebitLimitExceeded) {
-  if (m.transactionID === "") {
+function validateDailyDebitLimitExceeded(m: DailyDebitLimitExceeded) {
+  if (m.transactionId === "") {
     throw new InvalidMessageError(
       "DailyDebitLimitExceeded must not have an empty transaction ID",
     );
   }
-  if (m.accountID === "") {
+  if (m.accountId === "") {
     throw new InvalidMessageError(
       "DailyDebitLimitExceeded must not have an empty account ID",
     );
@@ -150,10 +128,10 @@ function validateDailyDebitLimitExceeded({ data: m }: DailyDebitLimitExceeded) {
   }
 }
 
-function describeDailyDebitLimitConsumed({ data: m }: DailyDebitLimitConsumed) {
-  return `${m.debitType} ${m.transactionID}: consumed ${formatAmount(m.amount)} from ${m.date} daily debit limit of account ${m.accountID}`;
+function describeDailyDebitLimitConsumed(m: DailyDebitLimitConsumed) {
+  return `${formatTransactionType(m.debitType)} ${m.transactionId}: consumed ${formatAmount(m.amount)} from ${m.date} daily debit limit of account ${m.accountId}`;
 }
 
-function describeDailyDebitLimitExceeded({ data: m }: DailyDebitLimitExceeded) {
-  return `${m.debitType} ${m.transactionID}: exceeded ${m.date} daily debit limit of account ${m.accountID} by ${formatAmount(m.totalDebitsForDay + m.amount - m.dailyLimit)}`;
+function describeDailyDebitLimitExceeded(m: DailyDebitLimitExceeded) {
+  return `${formatTransactionType(m.debitType)} ${m.transactionId}: exceeded ${m.date} daily debit limit of account ${m.accountId} by ${formatAmount(m.totalDebitsForDay + m.amount - m.dailyLimit)}`;
 }

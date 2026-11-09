@@ -8,12 +8,21 @@
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
+    "proto": "make generate",
     "build": "tsc",
     "test": "vitest run",
     "testing": "vitest",
     "start": "node --import ./loader.mjs src/example/cmd/bank/main.ts"
   },
+  "makefiles.dev": {
+    "protobuf": {
+      "importPath": "github.com/dogmatiq/dogma-ts"
+    }
+  },
   "dependencies": {
+    "@bufbuild/protobuf": "^2.17.0",
+    "@bufbuild/protoc-gen-es": "^2.17.0",
+    "@dogmatiq/protobuf": "^0.7.0",
     "@types/node": "^25.3.2",
     "typescript": "^7.0.2",
     "vitest": "^4.0.18"

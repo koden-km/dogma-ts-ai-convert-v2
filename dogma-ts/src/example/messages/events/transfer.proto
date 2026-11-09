@@ -1,0 +1,45 @@
+edition = "2024";
+package dogma.example.messages.events.v1;
+
+option features.field_presence = IMPLICIT;
+
+import "src/example/messages/transaction.proto";
+
+// TransferStarted is an event indicating that the process of transferring funds
+// from one account to another has begun.
+message TransferStarted {
+  string transaction_id = 1;
+  string from_account_id = 2;
+  string to_account_id = 3;
+  bool to_third_party_bank = 4;
+  int64 amount = 5;
+  string scheduled_time = 6;
+}
+
+// TransferApproved is an event that indicates a requested transfer has been
+// approved.
+message TransferApproved {
+  string transaction_id = 1;
+  string from_account_id = 2;
+  string to_account_id = 3;
+  int64 amount = 4;
+}
+
+// TransferDeclined is an event that indicates a requested transfer has been
+// declined.
+message TransferDeclined {
+  string transaction_id = 1;
+  string from_account_id = 2;
+  string to_account_id = 3;
+  int64 amount = 4;
+  dogma.example.messages.v1.DebitFailureReason reason = 5;
+}
+
+// TransferFailed is an event that indicates a transfer failed due to an
+// operational error after the transfer was initiated.
+message TransferFailed {
+  string transaction_id = 1;
+  string from_account_id = 2;
+  string to_account_id = 3;
+  int64 amount = 4;
+}

@@ -1,8 +1,7 @@
 import {
   type Context,
-  createMessageCreator,
+  create,
   type Deadline,
-  defineDeadlines,
   type Event,
   executesCommand,
   handlesEvent,
@@ -12,58 +11,68 @@ import {
   type ProcessEventScope,
   type ProcessMessageHandler,
   type ProcessRoot,
+  registerDeadline,
   schedulesDeadline,
   UnexpectedMessageError,
 } from "@/dogma/index.ts";
 import {
-  CommandName,
-  createCommand,
-  dailyDebitLimitDate,
+  AccountCreditedSchema,
+  AccountDebitDeclinedSchema,
+  AccountDebitedSchema,
+  ApproveTransferSchema,
+  ConsumeDailyDebitLimitSchema,
+  CreditAccountSchema,
+  CreditThirdPartyAccountSchema,
+  DailyDebitLimitConsumedSchema,
+  DailyDebitLimitExceededSchema,
+  DebitAccountSchema,
   DebitFailureReason,
+  DeclineTransferSchema,
   type DomainEvent,
-  EventName,
+  dailyDebitLimitDate,
   formatAmount,
+  formatDebitFailureReason,
+  MarkTransferAsFailedSchema,
+  ThirdPartyAccountCreditedSchema,
+  ThirdPartyAccountCreditFailedSchema,
   TransactionType,
+  TransferApprovedSchema,
+  TransferDeclinedSchema,
+  TransferFailedSchema,
+  TransferStartedSchema,
 } from "../messages/index.ts";
+import {
+  type TransferReadyToProceed,
+  TransferReadyToProceedSchema,
+} from "./transfer_pb.ts";
 
-export const DeadlineName = {
-  TransferReadyToProceed: "TransferReadyToProceed",
-} as const;
+export { type TransferReadyToProceed, TransferReadyToProceedSchema };
 
-// TransferReadyToProceed is a deadline message notifying that the transfer is
-// ready to proceed.
-export type TransferReadyToProceed = Deadline & {
-  name: typeof DeadlineName.TransferReadyToProceed;
-  data: {
-    transactionID: string;
-  };
-};
-
-const { messageCreators } = defineDeadlines<TransferReadyToProceed>([
-  [
-    DeadlineName.TransferReadyToProceed,
-    "b5474f89-e985-4661-b85b-645347a4a645",
-    ({ data: m }: TransferReadyToProceed) => {
-      if (m.transactionID === "") {
+registerDeadline(
+  TransferReadyToProceedSchema,
+  "b5474f89-e985-4661-b85b-645347a4a645",
+  {
+    validate(m: TransferReadyToProceed) {
+      if (m.transactionId === "") {
         throw new InvalidMessageError(
           "TransferReadyToProceed must not have an empty transaction ID",
         );
       }
     },
-    ({ data: m }: TransferReadyToProceed) =>
-      `transfer ${m.transactionID} is ready to proceed`,
-  ],
-]);
-
-export const createDeadline = createMessageCreator(messageCreators, "deadline");
+    describe(m: TransferReadyToProceed) {
+      return `transfer ${m.transactionId} is ready to proceed`;
+    },
+    allowIdempotent: true,
+  },
+);
 
 // TransferProcess is the process root for a funds transfer.
 export type TransferProcess = ProcessRoot & {
-  fromAccountID: string;
-  toAccountID: string;
+  fromAccountId: string;
+  toAccountId: string;
   toThirdPartyBank: boolean;
   amount: bigint;
-  declineReason: DebitFailureReason | "";
+  declineReason: DebitFailureReason;
 };
 
 // TransferProcessHandler manages the process of transferring funds between
@@ -73,35 +82,35 @@ export const TransferProcessHandler: ProcessMessageHandler<TransferProcess> = {
     c.identity("transfer", "35afbe82-24c1-4868-a689-c2ec96c2e953");
 
     c.routes(
-      handlesEvent(EventName.TransferStarted),
-      handlesEvent(EventName.AccountDebited),
-      handlesEvent(EventName.AccountDebitDeclined),
-      handlesEvent(EventName.DailyDebitLimitConsumed),
-      handlesEvent(EventName.DailyDebitLimitExceeded),
-      handlesEvent(EventName.AccountCredited),
-      handlesEvent(EventName.ThirdPartyAccountCredited),
-      handlesEvent(EventName.ThirdPartyAccountCreditFailed),
-      handlesEvent(EventName.TransferApproved),
-      handlesEvent(EventName.TransferDeclined),
-      handlesEvent(EventName.TransferFailed),
-      executesCommand(CommandName.DebitAccount),
-      executesCommand(CommandName.ConsumeDailyDebitLimit),
-      executesCommand(CommandName.CreditAccount),
-      executesCommand(CommandName.CreditThirdPartyAccount),
-      executesCommand(CommandName.ApproveTransfer),
-      executesCommand(CommandName.DeclineTransfer),
-      executesCommand(CommandName.MarkTransferAsFailed),
-      schedulesDeadline(DeadlineName.TransferReadyToProceed),
+      handlesEvent(TransferStartedSchema),
+      handlesEvent(AccountDebitedSchema),
+      handlesEvent(AccountDebitDeclinedSchema),
+      handlesEvent(DailyDebitLimitConsumedSchema),
+      handlesEvent(DailyDebitLimitExceededSchema),
+      handlesEvent(AccountCreditedSchema),
+      handlesEvent(ThirdPartyAccountCreditedSchema),
+      handlesEvent(ThirdPartyAccountCreditFailedSchema),
+      handlesEvent(TransferApprovedSchema),
+      handlesEvent(TransferDeclinedSchema),
+      handlesEvent(TransferFailedSchema),
+      executesCommand(DebitAccountSchema),
+      executesCommand(ConsumeDailyDebitLimitSchema),
+      executesCommand(CreditAccountSchema),
+      executesCommand(CreditThirdPartyAccountSchema),
+      executesCommand(ApproveTransferSchema),
+      executesCommand(DeclineTransferSchema),
+      executesCommand(MarkTransferAsFailedSchema),
+      schedulesDeadline(TransferReadyToProceedSchema),
     );
   },
 
   newRoot(): TransferProcess {
     return {
-      fromAccountID: "",
-      toAccountID: "",
+      fromAccountId: "",
+      toAccountId: "",
       toThirdPartyBank: false,
       amount: 0n,
-      declineReason: "",
+      declineReason: DebitFailureReason.DEBIT_FAILURE_REASON_UNSPECIFIED,
     };
   },
 
@@ -110,50 +119,46 @@ export const TransferProcessHandler: ProcessMessageHandler<TransferProcess> = {
       return "";
     }
     if (!ended) {
-      return `transferring ${formatAmount(p.amount)} from ${p.fromAccountID} to ${p.toAccountID}`;
+      return `transferring ${formatAmount(p.amount)} from ${p.fromAccountId} to ${p.toAccountId}`;
     }
-    if (p.declineReason !== "") {
-      return `transfer of ${formatAmount(p.amount)} from ${p.fromAccountID} to ${p.toAccountID} declined: ${p.declineReason}`;
+    if (
+      p.declineReason !== DebitFailureReason.DEBIT_FAILURE_REASON_UNSPECIFIED
+    ) {
+      return `transfer of ${formatAmount(p.amount)} from ${p.fromAccountId} to ${p.toAccountId} declined: ${formatDebitFailureReason(p.declineReason)}`;
     }
-    return `transferred ${formatAmount(p.amount)} from ${p.fromAccountID} to ${p.toAccountID}`;
+    return `transferred ${formatAmount(p.amount)} from ${p.fromAccountId} to ${p.toAccountId}`;
   },
 
   routeEventToInstance(_ctx: Context, e: Event): [string, boolean] {
     const m = e as DomainEvent;
-    switch (m.name) {
-      case EventName.TransferStarted:
-        return [m.data.transactionID, true];
-      case EventName.AccountDebited:
+    switch (m.$typeName) {
+      case TransferStartedSchema.typeName:
+        return [m.transactionId, true];
+      case AccountDebitedSchema.typeName:
         return [
-          m.data.transactionID,
-          m.data.transactionType === TransactionType.Transfer,
+          m.transactionId,
+          m.transactionType === TransactionType.TRANSFER,
         ];
-      case EventName.AccountDebitDeclined:
+      case AccountDebitDeclinedSchema.typeName:
         return [
-          m.data.transactionID,
-          m.data.transactionType === TransactionType.Transfer,
+          m.transactionId,
+          m.transactionType === TransactionType.TRANSFER,
         ];
-      case EventName.DailyDebitLimitConsumed:
+      case DailyDebitLimitConsumedSchema.typeName:
+        return [m.transactionId, m.debitType === TransactionType.TRANSFER];
+      case DailyDebitLimitExceededSchema.typeName:
+        return [m.transactionId, m.debitType === TransactionType.TRANSFER];
+      case AccountCreditedSchema.typeName:
         return [
-          m.data.transactionID,
-          m.data.debitType === TransactionType.Transfer,
+          m.transactionId,
+          m.transactionType === TransactionType.TRANSFER,
         ];
-      case EventName.DailyDebitLimitExceeded:
-        return [
-          m.data.transactionID,
-          m.data.debitType === TransactionType.Transfer,
-        ];
-      case EventName.AccountCredited:
-        return [
-          m.data.transactionID,
-          m.data.transactionType === TransactionType.Transfer,
-        ];
-      case EventName.ThirdPartyAccountCredited:
-      case EventName.ThirdPartyAccountCreditFailed:
-      case EventName.TransferApproved:
-      case EventName.TransferDeclined:
-      case EventName.TransferFailed:
-        return [m.data.transactionID, true];
+      case ThirdPartyAccountCreditedSchema.typeName:
+      case ThirdPartyAccountCreditFailedSchema.typeName:
+      case TransferApprovedSchema.typeName:
+      case TransferDeclinedSchema.typeName:
+      case TransferFailedSchema.typeName:
+        return [m.transactionId, true];
       default:
         throw new UnexpectedMessageError();
     }
@@ -166,150 +171,148 @@ export const TransferProcessHandler: ProcessMessageHandler<TransferProcess> = {
     e: Event,
   ): void {
     const m = e as DomainEvent;
-    switch (m.name) {
-      case EventName.TransferStarted: {
+    switch (m.$typeName) {
+      case TransferStartedSchema.typeName: {
         s.mutate((root) => {
-          root.fromAccountID = m.data.fromAccountID;
-          root.toAccountID = m.data.toAccountID;
-          root.toThirdPartyBank = Boolean(m.data.toThirdPartyBank);
-          root.amount = m.data.amount;
+          root.fromAccountId = m.fromAccountId;
+          root.toAccountId = m.toAccountId;
+          root.toThirdPartyBank = Boolean(m.toThirdPartyBank);
+          root.amount = m.amount;
         });
 
-        const scheduledAt =
-          typeof m.data.scheduledTime === "string"
-            ? new Date(m.data.scheduledTime)
-            : m.data.scheduledTime;
+        const scheduledAt = new Date(m.scheduledTime);
 
         s.scheduleDeadline(
-          createDeadline(DeadlineName.TransferReadyToProceed, {
-            transactionID: m.data.transactionID,
+          create(TransferReadyToProceedSchema, {
+            transactionId: m.transactionId,
           }),
           scheduledAt,
         );
         return;
       }
 
-      case EventName.AccountDebited:
+      case AccountDebitedSchema.typeName:
         s.executeCommand(
-          createCommand(CommandName.ConsumeDailyDebitLimit, {
-            transactionID: m.data.transactionID,
-            accountID: m.data.accountID,
-            debitType: TransactionType.Transfer,
-            amount: m.data.amount,
-            date: dailyDebitLimitDate(m.data.scheduledTime),
+          create(ConsumeDailyDebitLimitSchema, {
+            transactionId: m.transactionId,
+            accountId: m.accountId,
+            debitType: TransactionType.TRANSFER,
+            amount: m.amount,
+            date: dailyDebitLimitDate(m.scheduledTime),
           }),
         );
         return;
 
-      case EventName.AccountDebitDeclined:
+      case AccountDebitDeclinedSchema.typeName:
         s.executeCommand(
-          createCommand(CommandName.DeclineTransfer, {
-            transactionID: m.data.transactionID,
-            fromAccountID: t.fromAccountID,
-            toAccountID: t.toAccountID,
-            amount: m.data.amount,
-            reason: m.data.reason,
+          create(DeclineTransferSchema, {
+            transactionId: m.transactionId,
+            fromAccountId: t.fromAccountId,
+            toAccountId: t.toAccountId,
+            amount: m.amount,
+            reason: m.reason,
           }),
         );
         return;
 
-      case EventName.DailyDebitLimitConsumed:
+      case DailyDebitLimitConsumedSchema.typeName:
         if (t.toThirdPartyBank) {
           s.executeCommand(
-            createCommand(CommandName.CreditThirdPartyAccount, {
-              transactionID: m.data.transactionID,
-              accountID: t.toAccountID,
-              amount: m.data.amount,
+            create(CreditThirdPartyAccountSchema, {
+              transactionId: m.transactionId,
+              accountId: t.toAccountId,
+              amount: m.amount,
             }),
           );
         } else {
           s.executeCommand(
-            createCommand(CommandName.CreditAccount, {
-              transactionID: m.data.transactionID,
-              accountID: t.toAccountID,
-              transactionType: TransactionType.Transfer,
-              amount: m.data.amount,
+            create(CreditAccountSchema, {
+              transactionId: m.transactionId,
+              accountId: t.toAccountId,
+              transactionType: TransactionType.TRANSFER,
+              amount: m.amount,
             }),
           );
         }
         return;
 
-      case EventName.DailyDebitLimitExceeded:
+      case DailyDebitLimitExceededSchema.typeName:
         s.mutate((root) => {
-          root.declineReason = DebitFailureReason.DailyDebitLimitExceeded;
+          root.declineReason = DebitFailureReason.DAILY_DEBIT_LIMIT_EXCEEDED;
         });
 
         // compensate the initial debit
         s.executeCommand(
-          createCommand(CommandName.CreditAccount, {
-            transactionID: m.data.transactionID,
-            accountID: t.fromAccountID,
-            transactionType: TransactionType.Transfer,
-            amount: m.data.amount,
+          create(CreditAccountSchema, {
+            transactionId: m.transactionId,
+            accountId: t.fromAccountId,
+            transactionType: TransactionType.TRANSFER,
+            amount: m.amount,
           }),
         );
         return;
 
-      case EventName.AccountCredited:
-        if (t.toAccountID === m.data.accountID) {
+      case AccountCreditedSchema.typeName:
+        if (t.toAccountId === m.accountId) {
           // it was a credit to complete the transfer (success)
           s.executeCommand(
-            createCommand(CommandName.ApproveTransfer, {
-              transactionID: m.data.transactionID,
-              fromAccountID: t.fromAccountID,
-              toAccountID: t.toAccountID,
-              amount: m.data.amount,
+            create(ApproveTransferSchema, {
+              transactionId: m.transactionId,
+              fromAccountId: t.fromAccountId,
+              toAccountId: t.toAccountId,
+              amount: m.amount,
             }),
           );
         } else {
           // it was a compensating credit to undo the transfer (business rejection)
           s.executeCommand(
-            createCommand(CommandName.DeclineTransfer, {
-              transactionID: m.data.transactionID,
-              fromAccountID: t.fromAccountID,
-              toAccountID: t.toAccountID,
-              amount: m.data.amount,
+            create(DeclineTransferSchema, {
+              transactionId: m.transactionId,
+              fromAccountId: t.fromAccountId,
+              toAccountId: t.toAccountId,
+              amount: m.amount,
               reason:
-                t.declineReason || DebitFailureReason.DailyDebitLimitExceeded,
+                t.declineReason ||
+                DebitFailureReason.DAILY_DEBIT_LIMIT_EXCEEDED,
             }),
           );
         }
         return;
 
-      case EventName.ThirdPartyAccountCredited:
+      case ThirdPartyAccountCreditedSchema.typeName:
         s.executeCommand(
-          createCommand(CommandName.ApproveTransfer, {
-            transactionID: m.data.transactionID,
-            fromAccountID: t.fromAccountID,
-            toAccountID: t.toAccountID,
+          create(ApproveTransferSchema, {
+            transactionId: m.transactionId,
+            fromAccountId: t.fromAccountId,
+            toAccountId: t.toAccountId,
             amount: t.amount,
           }),
         );
         return;
 
-      case EventName.ThirdPartyAccountCreditFailed:
+      case ThirdPartyAccountCreditFailedSchema.typeName:
         s.executeCommand(
-          createCommand(CommandName.MarkTransferAsFailed, {
-            transactionID: m.data.transactionID,
-            fromAccountID: t.fromAccountID,
-            toAccountID: t.toAccountID,
+          create(MarkTransferAsFailedSchema, {
+            transactionId: m.transactionId,
+            fromAccountId: t.fromAccountId,
+            toAccountId: t.toAccountId,
             amount: t.amount,
           }),
         );
 
         s.executeCommand(
-          createCommand(CommandName.CreditAccount, {
-            transactionID: m.data.transactionID,
-            accountID: t.fromAccountID,
-            transactionType: TransactionType.Transfer,
+          create(CreditAccountSchema, {
+            transactionId: m.transactionId,
+            accountId: t.fromAccountId,
+            transactionType: TransactionType.TRANSFER,
             amount: t.amount,
           }),
         );
         return;
 
-      case EventName.TransferApproved:
-      case EventName.TransferDeclined:
-      case EventName.TransferFailed:
+      case TransferApprovedSchema.typeName:
+      case TransferDeclinedSchema.typeName:
+      case TransferFailedSchema.typeName:
         s.end();
         return;
 
@@ -325,15 +328,15 @@ export const TransferProcessHandler: ProcessMessageHandler<TransferProcess> = {
     d: Deadline,
   ): void {
     const m = d as TransferReadyToProceed;
-    switch (m.name) {
-      case DeadlineName.TransferReadyToProceed:
+    switch (m.$typeName) {
+      case TransferReadyToProceedSchema.typeName:
         s.executeCommand(
-          createCommand(CommandName.DebitAccount, {
-            transactionID: m.data.transactionID,
-            accountID: t.fromAccountID,
-            transactionType: TransactionType.Transfer,
+          create(DebitAccountSchema, {
+            transactionId: m.transactionId,
+            accountId: t.fromAccountId,
+            transactionType: TransactionType.TRANSFER,
             amount: t.amount,
-            scheduledTime: s.scheduledFor(),
+            scheduledTime: s.scheduledFor().toISOString(),
           }),
         );
         return;

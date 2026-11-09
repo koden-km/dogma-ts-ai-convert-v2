@@ -1,0 +1,17 @@
+edition = "2024";
+package dogma.example.messages.v1;
+
+option features.field_presence = IMPLICIT;
+
+enum TransactionType {
+  TRANSACTION_TYPE_UNSPECIFIED = 0;
+  DEPOSIT = 1;
+  WITHDRAWAL = 2;
+  TRANSFER = 3;
+}
+
+enum DebitFailureReason {
+  DEBIT_FAILURE_REASON_UNSPECIFIED = 0;
+  INSUFFICIENT_FUNDS = 1;
+  DAILY_DEBIT_LIMIT_EXCEEDED = 2;
+}

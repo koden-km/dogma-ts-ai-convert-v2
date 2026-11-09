@@ -1,4 +1,5 @@
 import {
+  type MessageTypeInput,
   mustRegisteredMessageTypeFor,
   type RegisteredMessageType,
 } from "./message-type-registry.ts";
@@ -58,7 +59,7 @@ export type MessageRoute =
 // handlesCommand configures an [AggregateMessageHandler] or
 // [IntegrationMessageHandler] as a consumer of [Command] messages of type T.
 export function handlesCommand<T extends Command = Command>(
-  nameOrType: T["name"] | RegisteredMessageType,
+  nameOrType: MessageTypeInput<T>,
 ): HandlesCommandRoute {
   return {
     kind: "HandlesCommand",
@@ -69,7 +70,7 @@ export function handlesCommand<T extends Command = Command>(
 // executesCommand configures a [ProcessMessageHandler] as a producer of
 // [Command] messages of type T.
 export function executesCommand<T extends Command = Command>(
-  nameOrType: T["name"] | RegisteredMessageType,
+  nameOrType: MessageTypeInput<T>,
 ): ExecutesCommandRoute {
   return {
     kind: "ExecutesCommand",
@@ -80,7 +81,7 @@ export function executesCommand<T extends Command = Command>(
 // recordsEvent configures an [AggregateMessageHandler] or
 // [IntegrationMessageHandler] as a producer of [Event] messages of type T.
 export function recordsEvent<T extends Event = Event>(
-  nameOrType: T["name"] | RegisteredMessageType,
+  nameOrType: MessageTypeInput<T>,
 ): RecordsEventRoute {
   return {
     kind: "RecordsEvent",
@@ -91,7 +92,7 @@ export function recordsEvent<T extends Event = Event>(
 // handlesEvent configures a [ProcessMessageHandler] or [ProjectionMessageHandler] as a
 // consumer of [Event] messages of type T.
 export function handlesEvent<T extends Event = Event>(
-  nameOrType: T["name"] | RegisteredMessageType,
+  nameOrType: MessageTypeInput<T>,
 ): HandlesEventRoute {
   return {
     kind: "HandlesEvent",
@@ -102,7 +103,7 @@ export function handlesEvent<T extends Event = Event>(
 // schedulesDeadline configures a [ProcessMessageHandler] as a scheduler of
 // [Deadline] messages of type T.
 export function schedulesDeadline<T extends Deadline = Deadline>(
-  nameOrType: T["name"] | RegisteredMessageType,
+  nameOrType: MessageTypeInput<T>,
 ): SchedulesDeadlineRoute {
   return {
     kind: "SchedulesDeadline",

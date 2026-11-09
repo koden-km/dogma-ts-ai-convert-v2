@@ -1,5 +1,6 @@
 import {
   type Command,
+  create,
   handlesCommand,
   type IntegrationCommandScope,
   type IntegrationConfigurer,
@@ -8,11 +9,11 @@ import {
   UnexpectedMessageError,
 } from "@/dogma/index.ts";
 import {
-  CommandName,
-  createEvent,
+  CreditThirdPartyAccountSchema,
   type DomainCommand,
-  EventName,
   formatAmount,
+  ThirdPartyAccountCreditedSchema,
+  ThirdPartyAccountCreditFailedSchema,
 } from "@/example/messages/index.ts";
 
 // ThirdPartyBankIntegrationHandler handles commands that interact with
@@ -22,38 +23,38 @@ export const ThirdPartyBankIntegrationHandler: IntegrationMessageHandler = {
     c.identity("third-party-bank", "f2a7e4b1-9c3d-4f8a-b6e5-1d0c2a9f7e3b");
 
     c.routes(
-      handlesCommand(CommandName.CreditThirdPartyAccount),
-      recordsEvent(EventName.ThirdPartyAccountCredited),
-      recordsEvent(EventName.ThirdPartyAccountCreditFailed),
+      handlesCommand(CreditThirdPartyAccountSchema),
+      recordsEvent(ThirdPartyAccountCreditedSchema),
+      recordsEvent(ThirdPartyAccountCreditFailedSchema),
     );
   },
 
   handleCommand(_ctx, s: IntegrationCommandScope, c: Command): void {
     const m = c as DomainCommand;
 
-    switch (m.name) {
-      case CommandName.CreditThirdPartyAccount:
+    switch (m.$typeName) {
+      case CreditThirdPartyAccountSchema.typeName:
         s.log(
-          `crediting third-party account ${m.data.accountID} with ${formatAmount(m.data.amount)} (transaction ${m.data.transactionID})`,
+          `crediting third-party account ${m.accountId} with ${formatAmount(m.amount)} (transaction ${m.transactionId})`,
         );
 
-        if (!/^\d+$/.test(m.data.accountID)) {
+        if (!/^\d+$/.test(m.accountId)) {
           s.log(
-            `third-party bank rejected the credit: account ${m.data.accountID} not found`,
+            `third-party bank rejected the credit: account ${m.accountId} not found`,
           );
           s.recordEvent(
-            createEvent(EventName.ThirdPartyAccountCreditFailed, {
-              transactionID: m.data.transactionID,
-              accountID: m.data.accountID,
-              amount: m.data.amount,
+            create(ThirdPartyAccountCreditFailedSchema, {
+              transactionId: m.transactionId,
+              accountId: m.accountId,
+              amount: m.amount,
             }),
           );
         } else {
           s.recordEvent(
-            createEvent(EventName.ThirdPartyAccountCredited, {
-              transactionID: m.data.transactionID,
-              accountID: m.data.accountID,
-              amount: m.data.amount,
+            create(ThirdPartyAccountCreditedSchema, {
+              transactionId: m.transactionId,
+              accountId: m.accountId,
+              amount: m.amount,
             }),
           );
         }

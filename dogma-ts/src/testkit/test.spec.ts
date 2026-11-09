@@ -79,12 +79,12 @@ function buildTestApp(state?: { projectedEvents: string[] }): Application {
           },
           handleCommand(r, s, m) {
             const cmd = m as CommandStub;
-            if (cmd.data.content === "noop") {
+            if (cmd.content === "noop") {
               s.log("ignoring noop");
               return;
             }
             s.recordEvent(
-              createEventStub("EventStub[A]", `${cmd.data.content}:${r.count}`),
+              createEventStub("EventStub[A]", `${cmd.content}:${r.count}`),
             );
           },
         }),
@@ -101,25 +101,25 @@ function buildTestApp(state?: { projectedEvents: string[] }): Application {
           newRoot: () => ({}),
           routeEventToInstance(_ctx, m) {
             const ev = m as EventStub;
-            if (ev.data.content.startsWith("ignore")) {
+            if (ev.content.startsWith("ignore")) {
               return ["", false];
             }
-            return [`proc-${ev.data.content}`, true];
+            return [`proc-${ev.content}`, true];
           },
           handleEvent(_ctx, _r, s, m) {
             const ev = m as EventStub;
-            if (ev.data.content.startsWith("delay:")) {
+            if (ev.content.startsWith("delay:")) {
               s.mutate((root) => {
-                root.target = ev.data.content;
+                root.target = ev.content;
               });
               s.scheduleDeadline(
-                createDeadlineStub("DeadlineStub[A]", ev.data.content),
+                createDeadlineStub("DeadlineStub[A]", ev.content),
                 new Date(s.now().getTime() + 60_000),
               );
               return;
             }
             s.executeCommand(
-              createCommandStub("CommandStub[B]", `from-proc:${ev.data.content}`),
+              createCommandStub("CommandStub[B]", `from-proc:${ev.content}`),
             );
             s.end();
           },
@@ -142,7 +142,7 @@ function buildTestApp(state?: { projectedEvents: string[] }): Application {
           handleCommand(_ctx, s, m) {
             const cmd = m as CommandStub;
             s.recordEvent(
-              createEventStub("EventStub[B]", `integ:${cmd.data.content}`),
+              createEventStub("EventStub[B]", `integ:${cmd.content}`),
             );
           },
         }),
@@ -158,7 +158,7 @@ function buildTestApp(state?: { projectedEvents: string[] }): Application {
             );
           },
           handleEvent(_ctx, s, m) {
-            state?.projectedEvents.push(`${m.name}:${(m as any).data.content}`);
+            state?.projectedEvents.push(`${m.$typeName}:${(m as EventStub).content}`);
             return s.offset() + 1n;
           },
           checkpointOffset() {
@@ -255,13 +255,13 @@ describe("testkit", () => {
       allOf(
         anyOf(
           toExecuteCommandMatching<CommandStub>(
-            (m) => m.data.content === "from-proc:direct",
+            (m) => m.content === "from-proc:direct",
             "CommandStub[B]",
           ),
         ),
         toOnlyExecuteCommandsMatching<CommandStub>((m) => {
-          if (m.name !== "CommandStub[B]") return IgnoreMessage;
-          return m.data.content.startsWith("from-proc:");
+          if (m.$typeName !== "CommandStub[B]") return IgnoreMessage;
+          return m.content.startsWith("from-proc:");
         }),
         toRepeatedly("check command execution", 2, () =>
           toExecuteCommandOfType("CommandStub[B]"),
@@ -299,17 +299,17 @@ describe("testkit", () => {
       }),
       allOf(
         toRecordEventMatching<EventStub>(
-          (ev) => ev.data.content === "via-executor:0",
+          (ev) => ev.content === "via-executor:0",
           "EventStub[A]",
         ),
         toOnlyRecordEventsMatching<EventStub>(
-          (ev) => ev.data.content === "via-executor:0",
+          (ev) => ev.content === "via-executor:0",
           "EventStub[A]",
         ),
       ),
     );
 
-    expect(observedEvent?.data.content).toBe("via-executor:0");
+    expect(observedEvent?.content).toBe("via-executor:0");
 
     // Unsatisfied event observer throws EventObserverNotSatisfiedError
     let caughtError: unknown;

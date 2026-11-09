@@ -8,7 +8,10 @@ import {
   type ProjectionResetScope,
   UnexpectedMessageError,
 } from "@/dogma/index.ts";
-import { type DomainEvent, EventName } from "@/example/messages/index.ts";
+import {
+  CustomerAcquiredSchema,
+  type DomainEvent,
+} from "@/example/messages/index.ts";
 import {
   type MessageHandler,
   NoCompactBehavior,
@@ -26,7 +29,7 @@ export const CustomerProjectionHandler: MessageHandler = {
   configure(c: ProjectionConfigurer): void {
     c.identity("customers", "70b58269-931a-46d6-b745-286a670fb6f7");
 
-    c.routes(handlesEvent(EventName.CustomerAcquired));
+    c.routes(handlesEvent(CustomerAcquiredSchema));
   },
 
   handleEvent(
@@ -37,8 +40,8 @@ export const CustomerProjectionHandler: MessageHandler = {
   ): void {
     const e = m as DomainEvent;
 
-    switch (e.name) {
-      case EventName.CustomerAcquired: {
+    switch (e.$typeName) {
+      case CustomerAcquiredSchema.typeName: {
         const stmt = tx.prepare(`
           INSERT INTO customers (
             id,
@@ -48,7 +51,7 @@ export const CustomerProjectionHandler: MessageHandler = {
             ?
           )
         `);
-        stmt.run(e.data.customerID, e.data.customerName);
+        stmt.run(e.customerId, e.customerName);
         return;
       }
 
