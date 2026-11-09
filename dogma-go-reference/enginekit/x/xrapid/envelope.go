@@ -1,8 +1,8 @@
 package xrapid
 
 import (
-	"github.com/dogmatiq/enginekit/protobuf/envelopepb"
-	"github.com/dogmatiq/enginekit/protobuf/uuidpb"
+	"github.com/dogmatiq/protobuf/envelopepb"
+	"github.com/dogmatiq/protobuf/uuidpb"
 	anypb "google.golang.org/protobuf/types/known/anypb"
 	"pgregory.net/rapid"
 )

@@ -3,12 +3,14 @@ package fact
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/dogmatiq/enginekit/config"
 	"github.com/dogmatiq/enginekit/message"
 	"github.com/dogmatiq/testkit/envelope"
 	"github.com/dogmatiq/testkit/fact/internal/logging"
+	"github.com/dogmatiq/testkit/internal/inflect"
 )
 
 // Logger is an observer that logs human-readable messages to a log function.
@@ -29,6 +31,8 @@ func (l *Logger) Notify(f Fact) {
 	switch x := f.(type) {
 	case DispatchCycleBegun:
 		l.dispatchCycleBegun(x)
+	case DispatchCycleSkipped:
+		l.dispatchCycleSkipped(x)
 	case DispatchBegun:
 		l.dispatchBegun(x)
 	case CommandDeduplicated:
@@ -94,6 +98,30 @@ func (l *Logger) dispatchCycleBegun(f DispatchCycleBegun) {
 		"dispatching",
 		formatEngineTime(f.EngineTime),
 		formatEnabledHandlers(f.EnabledHandlerTypes, f.EnabledHandlers),
+	)
+}
+
+// dispatchCycleSkipped returns the log message for f.
+func (l *Logger) dispatchCycleSkipped(f DispatchCycleSkipped) {
+	mt := message.TypeOf(f.Envelope.Message)
+
+	var reason string
+
+	switch f.Reason {
+	case UnroutedMessageType:
+		reason = inflect.Sprintf(mt.Kind(), "dispatch skipped because no handlers within the application have routes for the %s <message>", mt)
+	case OutboundOnlyMessageType:
+		reason = inflect.Sprintf(mt.Kind(), "dispatch skipped because no handlers within the application have inbound routes for the %s <message>, it is only ever <produced>", mt)
+	}
+
+	l.log(
+		f.Envelope,
+		[]logging.Icon{
+			logging.InboundIcon,
+			logging.SystemIcon,
+			"",
+		},
+		reason,
 	)
 }
 
@@ -563,17 +591,17 @@ func formatEnabledHandlers(
 	byType map[config.HandlerType]bool,
 	byName map[string]bool,
 ) string {
-	var s string
+	var s strings.Builder
 
 	for ht := range config.HandlerTypes() {
 		if byType[ht] {
-			s += config.MapByHandlerType(
+			s.WriteString(config.MapByHandlerType(
 				ht,
 				" +aggregates",
 				" +processes",
 				" +integrations",
 				" +projections",
-			)
+			))
 		}
 	}
 
@@ -586,11 +614,11 @@ func formatEnabledHandlers(
 
 	for _, n := range sorted {
 		if byName[n] {
-			s += " +" + n
+			s.WriteString(" +" + n)
 		} else {
-			s += " -" + n
+			s.WriteString(" -" + n)
 		}
 	}
 
-	return "enabled:" + s
+	return "enabled:" + s.String()
 }

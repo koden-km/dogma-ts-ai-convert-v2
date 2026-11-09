@@ -293,7 +293,7 @@ func TestToRecordEvent(t *testing.T) {
 			mt := &testingmock.T{FailSilently: true}
 			tc := Begin(mt, app, c.Options...)
 			tc.Expect(c.Action(t, tc), c.Expectation)
-			c.Report(mt)
+			c.Report(t, mt)
 			if mt.Failed() != !c.Passes {
 				t.Fatalf(
 					"expectation should have %s but %s",
@@ -308,5 +308,13 @@ func TestToRecordEvent(t *testing.T) {
 func TestToRecordEvent_NilMessage(t *testing.T) {
 	xtesting.ExpectPanic(t, "ToRecordEvent(<nil>): message must not be nil", func() {
 		ToRecordEvent(nil)
+	})
+}
+
+func TestToRecordEvent_InvalidMessage(t *testing.T) {
+	xtesting.ExpectPanic(t, "ToRecordEvent(*stubs.EventStub[TypeA]): <invalid>", func() {
+		ToRecordEvent(&EventStub[TypeA]{
+			ValidationError: "<invalid>",
+		})
 	})
 }

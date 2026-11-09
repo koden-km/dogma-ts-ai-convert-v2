@@ -370,8 +370,8 @@ func orderedReverse[T any, S ordered[T, I], I any](
 		if s != nil {
 			members := *s.ptr()
 
-			for i := len(members) - 1; i >= 0; i-- {
-				if !yield(members[i]) {
+			for _, member := range slices.Backward(members) {
+				if !yield(member) {
 					return
 				}
 			}

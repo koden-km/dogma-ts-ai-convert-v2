@@ -152,10 +152,7 @@ func (m *Map[K, V]) Merge(x *Map[K, V]) *Map[K, V] {
 	}
 
 	elements := maps.Clone(m.elements)
-
-	for k, v := range x.elements {
-		elements[k] = v
-	}
+	maps.Copy(elements, x.elements)
 
 	return &Map[K, V]{
 		elements: elements,

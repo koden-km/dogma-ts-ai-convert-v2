@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"sync/atomic"
 
-	"github.com/dogmatiq/enginekit/protobuf/uuidpb"
+	"github.com/dogmatiq/protobuf/uuidpb"
 )
 
 // UUIDSequence is a generator of deterministic UUIDs for use in tests.

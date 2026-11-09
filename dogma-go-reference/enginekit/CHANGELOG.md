@@ -11,6 +11,96 @@ The format is based on [Keep a Changelog], and this project adheres to
 [semantic versioning]: https://semver.org/spec/v2.0.0.html
 [bc]: https://github.com/dogmatiq/.github/blob/main/VERSIONING.md#changelogs
 
+## [0.31.0] - 2026-11-06
+
+### Changed
+
+- Updated to [`github.com/dogmatiq/protobuf`] v0.7.0.
+
+### Removed
+
+- **[BC]** Removed the `x/xsync` package. Its types are now provided by
+  [`github.com/dogmatiq/cosyne`], with the same names, except that
+  `xsync.SucceedOnce` is now `cosyne.Once`. `xsync.ChangeObservable()` has no
+  replacement.
+
+[`github.com/dogmatiq/cosyne`]: https://github.com/dogmatiq/cosyne
+
+## [0.30.0] - 2026-11-04
+
+### Added
+
+- Added `xsync.LatchR`, `FutureR`, `ObservableR` and `SignalR`, which are
+  receive-only views of the corresponding types, analogous to a `<-chan` for a
+  `chan`.
+
+### Changed
+
+- **[BC]** Renamed `xsync.Future.Ready()` to `Chan()`, for consistency with
+  `Latch` and `Signal`.
+
+## [0.29.0] - 2026-11-02
+
+This release moves Dogma's Protocol Buffers schema to the
+[`github.com/dogmatiq/protobuf`] module. The `uuidpb`, `identitypb`,
+`envelopepb` and `messaginggrpc` packages are now provided by that module, and
+`configpb` is regenerated to import its types.
+
+The schema in `github.com/dogmatiq/protobuf` uses the `dogma.protobuf.v1`
+Protocol Buffers package instead of `dogma.protobuf`, so the full names of
+these messages and their `google.protobuf.Any` type URLs have changed. Their
+binary encoding is unchanged.
+
+### Added
+
+- Added the `envelope` package, which contains `Packer`, `EffectPacker`,
+  `Unpack()` and the packing options previously in `envelopepb`.
+- Added the `uuidcollection` package, which contains `Map`, `Set` and
+  `NewSet()` previously in `uuidpb`.
+
+### Changed
+
+- **[BC]** `envelope.WithExtension()` and `WithBaggage()` now panic if the
+  value is a nil pointer, such as `(*wrapperspb.StringValue)(nil)`. Previously,
+  it was packed as an empty message.
+- `envelope.WithExtension()` and `WithBaggage()` now report an invalid value
+  when the option is applied by the packer, rather than when the option is
+  created.
+
+### Removed
+
+- **[BC]** Removed the `protobuf/uuidpb`, `protobuf/identitypb` and
+  `protobuf/envelopepb` packages. Use the packages of the same name in
+  `github.com/dogmatiq/protobuf` instead.
+- **[BC]** Removed the `grpc/messaginggrpc` package. Use the package of the same
+  name in `github.com/dogmatiq/protobuf` instead.
+- **[BC]** Removed `CommandExecutorAPI` and the `UnrecognizedApplication`,
+  `UnrecognizedCommandType`, `UnrecognizedEventType`, `MalformedMessage` and
+  `InvalidMessage` error details, along with their error constructors. They're
+  expected in a future version of `github.com/dogmatiq/protobuf`.
+
+[`github.com/dogmatiq/protobuf`]: https://github.com/dogmatiq/protobuf
+
+## [0.28.0] - 2026-11-02
+
+### Added
+
+- Added `xsync.ChangeObservable()`, which updates an `Observable` only if the
+  new value differs from its current value, so that readers are not notified
+  when nothing has changed.
+
+### Changed
+
+- **[BC]** Update minimum Go version to v1.27.
+- **[BC]** `envelopepb.GetExtension()`, `MustGetExtension()`, `GetBaggage()`
+  and `MustGetBaggage()` now accept an `*Envelope` instead of a `*Body`.
+
+### Fixed
+
+- `envelopepb.GetExtension()` and `GetBaggage()` now find values that are
+  present in the envelope's header, such as those shared by every message in a
+  `MultiEnvelope`. Values in the body still take precedence.
+
 ## [0.27.7] - 2026-10-25
 
 ### Added
@@ -720,6 +810,11 @@ which itself includes a large numbers of breaking changes.
 [0.27.5]: https://github.com/dogmatiq/enginekit/releases/v0.27.5
 [0.27.6]: https://github.com/dogmatiq/enginekit/releases/v0.27.6
 [0.27.7]: https://github.com/dogmatiq/enginekit/releases/v0.27.7
+[0.28.0]: https://github.com/dogmatiq/enginekit/releases/tag/v0.28.0
+[0.29.0]: https://github.com/dogmatiq/enginekit/releases/tag/v0.29.0
+[unreleased]: https://github.com/dogmatiq/enginekit/compare/v0.29.0...HEAD
+[0.30.0]: https://github.com/dogmatiq/enginekit/releases/tag/v0.30.0
+[0.31.0]: https://github.com/dogmatiq/enginekit/releases/tag/v0.31.0
 
 <!-- version template
 ## [0.0.1] - YYYY-MM-DD

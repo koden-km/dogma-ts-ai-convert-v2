@@ -6,8 +6,8 @@ import (
 
 	"github.com/dogmatiq/dogma"
 	"github.com/dogmatiq/enginekit/optional"
-	"github.com/dogmatiq/enginekit/protobuf/identitypb"
-	"github.com/dogmatiq/enginekit/protobuf/uuidpb"
+	"github.com/dogmatiq/protobuf/identitypb"
+	"github.com/dogmatiq/protobuf/uuidpb"
 )
 
 // Application is an [Entity] that represents the configuration of a

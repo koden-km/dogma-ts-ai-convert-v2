@@ -1,0 +1,77 @@
+{
+  "name": "@dogmatiq/protobuf",
+  "version": "0.0.0",
+  "description": "Protocol Buffers and gRPC definitions for Dogma",
+  "keywords": [
+    "dogma",
+    "grpc",
+    "protobuf",
+    "protocol-buffers",
+    "schema"
+  ],
+  "license": "MIT",
+  "author": "James Harris",
+  "type": "module",
+  "homepage": "https://github.com/dogmatiq/protobuf#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dogmatiq/protobuf.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dogmatiq/protobuf/issues"
+  },
+  "packageManager": "pnpm@12.16.1",
+  "publishConfig": {
+    "access": "public"
+  },
+  "sideEffects": false,
+  "exports": {
+    "./envelopepb": {
+      "types": "./artifacts/dist/envelopepb/index.d.ts",
+      "default": "./artifacts/dist/envelopepb/index.js"
+    },
+    "./identitypb": {
+      "types": "./artifacts/dist/identitypb/index.d.ts",
+      "default": "./artifacts/dist/identitypb/index.js"
+    },
+    "./messaginggrpc": {
+      "types": "./artifacts/dist/messaginggrpc/index.d.ts",
+      "default": "./artifacts/dist/messaginggrpc/index.js"
+    },
+    "./uuidpb": {
+      "types": "./artifacts/dist/uuidpb/index.d.ts",
+      "default": "./artifacts/dist/uuidpb/index.js"
+    },
+    "./github.com/dogmatiq/protobuf/*_pb.js": {
+      "types": "./artifacts/dist/*_pb.d.ts",
+      "default": "./artifacts/dist/*_pb.js"
+    }
+  },
+  "files": [
+    "/artifacts/dist/",
+    "*/*.proto"
+  ],
+  "scripts": {
+    "prepublishOnly": "make artifacts/dist"
+  },
+  "peerDependencies": {
+    "@bufbuild/protobuf": "^2.16.0"
+  },
+  "makefiles.dev": {
+    "protobuf": {
+      "importPath": "github.com/dogmatiq/protobuf"
+    }
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
+    "@bufbuild/protobuf": "^2.16.0",
+    "@bufbuild/protoc-gen-es": "^2.16.0",
+    "@types/node": "^26.6.6",
+    "@vitest/coverage-v8": "^5.0.5",
+    "prettier": "^3.9.10",
+    "prettier-plugin-organize-imports": "^4.3.0",
+    "publint": "^0.3.25",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}

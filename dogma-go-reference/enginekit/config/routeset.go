@@ -2,6 +2,7 @@ package config
 
 import (
 	"iter"
+	"maps"
 	"slices"
 
 	"github.com/dogmatiq/enginekit/collections/sets"
@@ -127,9 +128,7 @@ func (s *RouteSet) merge(set RouteSet) {
 				byRouteTypeTarget[rt] = byHandlerTarget
 			}
 
-			for h, r := range byHandlerSource {
-				byHandlerTarget[h] = r
-			}
+			maps.Copy(byHandlerTarget, byHandlerSource)
 		}
 	}
 }

@@ -1,0 +1,26 @@
+edition = "2024";
+package dogma.messaging.v1;
+
+option go_package = "github.com/dogmatiq/protobuf/messaginggrpc";
+
+import "google/protobuf/empty.proto";
+import "github.com/dogmatiq/protobuf/uuidpb/uuid.proto";
+
+// MessageFilter describes a set of messages to deliver.
+message MessageFilter {
+  // MessageTypes describes a set of specific message types.
+  message MessageTypes {
+    // Ids is the set of message type IDs that match the filter.
+    // The list must not be empty.
+    repeated dogma.protobuf.v1.UUID ids = 1;
+  }
+
+  // Types determines which message types match. One alternative must be set.
+  oneof types {
+    // All matches all message types.
+    google.protobuf.Empty all = 1;
+
+    // Specific matches the listed message types.
+    MessageTypes specific = 2;
+  }
+}

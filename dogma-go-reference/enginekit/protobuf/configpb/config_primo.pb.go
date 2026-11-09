@@ -8,7 +8,7 @@ package configpb
 
 import (
 	"fmt"
-	identitypb "github.com/dogmatiq/enginekit/protobuf/identitypb"
+	identitypb "github.com/dogmatiq/protobuf/identitypb"
 	proto "google.golang.org/protobuf/proto"
 )
 

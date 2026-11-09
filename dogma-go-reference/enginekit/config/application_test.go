@@ -473,10 +473,8 @@ func TestApplication(t *testing.T) {
 			entity := &Application{
 				HandlerComponents: []Handler{
 					&Projection{
-						HandlerCommon: HandlerCommon{
-							RouteComponents: []*Route{
-								{},
-							},
+						RouteComponents: []*Route{
+							{},
 						},
 					},
 				},

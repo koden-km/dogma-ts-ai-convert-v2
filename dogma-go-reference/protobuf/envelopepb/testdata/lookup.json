@@ -1,0 +1,230 @@
+[
+  {
+    "name": "missing header and body",
+    "header": null,
+    "body": null,
+    "offset": null,
+    "error": false
+  },
+  {
+    "name": "empty locations",
+    "header": [],
+    "body": [],
+    "offset": null,
+    "error": false
+  },
+  {
+    "name": "header fallback",
+    "header": [
+      {
+        "typeUrl": "type.googleapis.com/dogma.protobuf.v1.EventStreamPosition",
+        "data": "1001"
+      }
+    ],
+    "body": null,
+    "offset": 1,
+    "error": false
+  },
+  {
+    "name": "body without header",
+    "header": null,
+    "body": [
+      {
+        "typeUrl": "type.googleapis.com/dogma.protobuf.v1.EventStreamPosition",
+        "data": "1002"
+      }
+    ],
+    "offset": 2,
+    "error": false
+  },
+  {
+    "name": "body overrides header",
+    "header": [
+      {
+        "typeUrl": "type.googleapis.com/dogma.protobuf.v1.EventStreamPosition",
+        "data": "1001"
+      }
+    ],
+    "body": [
+      {
+        "typeUrl": "type.googleapis.com/dogma.protobuf.v1.EventStreamPosition",
+        "data": "1002"
+      }
+    ],
+    "offset": 2,
+    "error": false
+  },
+  {
+    "name": "first duplicate in header",
+    "header": [
+      {
+        "typeUrl": "type.googleapis.com/dogma.protobuf.v1.EventStreamPosition",
+        "data": "1001"
+      },
+      {
+        "typeUrl": "type.googleapis.com/dogma.protobuf.v1.EventStreamPosition",
+        "data": "1002"
+      }
+    ],
+    "body": [],
+    "offset": 1,
+    "error": false
+  },
+  {
+    "name": "first duplicate in body",
+    "header": [
+      {
+        "typeUrl": "type.googleapis.com/dogma.protobuf.v1.EventStreamPosition",
+        "data": "1001"
+      }
+    ],
+    "body": [
+      {
+        "typeUrl": "type.googleapis.com/dogma.protobuf.v1.EventStreamPosition",
+        "data": "1002"
+      },
+      {
+        "typeUrl": "type.googleapis.com/dogma.protobuf.v1.EventStreamPosition",
+        "data": "1003"
+      }
+    ],
+    "offset": 2,
+    "error": false
+  },
+  {
+    "name": "alternate body prefix overrides header",
+    "header": [
+      {
+        "typeUrl": "type.googleapis.com/dogma.protobuf.v1.EventStreamPosition",
+        "data": "1001"
+      }
+    ],
+    "body": [
+      {
+        "typeUrl": "example.com/dogma.protobuf.v1.EventStreamPosition",
+        "data": "1002"
+      }
+    ],
+    "offset": 2,
+    "error": false
+  },
+  {
+    "name": "bare message name",
+    "header": null,
+    "body": [
+      {
+        "typeUrl": "dogma.protobuf.v1.EventStreamPosition",
+        "data": "1002"
+      }
+    ],
+    "offset": 2,
+    "error": false
+  },
+  {
+    "name": "malformed and unknown values skipped",
+    "header": [
+      {
+        "typeUrl": "type.googleapis.com/dogma.protobuf.v1.EventStreamPosition",
+        "data": "1001"
+      }
+    ],
+    "body": [
+      {
+        "typeUrl": "example.com/",
+        "data": "ff"
+      },
+      {
+        "typeUrl": "",
+        "data": "ff"
+      },
+      {
+        "typeUrl": "example.com/invalid-name",
+        "data": "ff"
+      },
+      {
+        "typeUrl": "example.com/example.Unknown",
+        "data": "ff"
+      }
+    ],
+    "offset": 1,
+    "error": false
+  },
+  {
+    "name": "unknown values only",
+    "header": null,
+    "body": [
+      {
+        "typeUrl": "example.com/example.Unknown",
+        "data": "ff"
+      }
+    ],
+    "offset": null,
+    "error": false
+  },
+  {
+    "name": "empty payload is a default value",
+    "header": null,
+    "body": [
+      {
+        "typeUrl": "type.googleapis.com/dogma.protobuf.v1.EventStreamPosition",
+        "data": ""
+      }
+    ],
+    "offset": 0,
+    "error": false
+  },
+  {
+    "name": "selected body decode failure does not fall back",
+    "header": [
+      {
+        "typeUrl": "type.googleapis.com/dogma.protobuf.v1.EventStreamPosition",
+        "data": "1001"
+      }
+    ],
+    "body": [
+      {
+        "typeUrl": "type.googleapis.com/dogma.protobuf.v1.EventStreamPosition",
+        "data": "ff"
+      },
+      {
+        "typeUrl": "type.googleapis.com/dogma.protobuf.v1.EventStreamPosition",
+        "data": "1002"
+      }
+    ],
+    "offset": null,
+    "error": true
+  },
+  {
+    "name": "selected header decode failure does not fall back",
+    "header": [
+      {
+        "typeUrl": "type.googleapis.com/dogma.protobuf.v1.EventStreamPosition",
+        "data": "ff"
+      },
+      {
+        "typeUrl": "type.googleapis.com/dogma.protobuf.v1.EventStreamPosition",
+        "data": "1002"
+      }
+    ],
+    "body": null,
+    "offset": null,
+    "error": true
+  },
+  {
+    "name": "unselected header decode failure ignored",
+    "header": [
+      {
+        "typeUrl": "type.googleapis.com/dogma.protobuf.v1.EventStreamPosition",
+        "data": "ff"
+      }
+    ],
+    "body": [
+      {
+        "typeUrl": "type.googleapis.com/dogma.protobuf.v1.EventStreamPosition",
+        "data": "1002"
+      }
+    ],
+    "offset": 2,
+    "error": false
+  }
+]

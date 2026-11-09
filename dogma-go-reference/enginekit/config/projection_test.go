@@ -372,9 +372,7 @@ func TestProjection(t *testing.T) {
 			for _, c := range cases {
 				t.Run(c.Name, func(t *testing.T) {
 					handler := &Projection{
-						HandlerCommon: HandlerCommon{
-							RouteComponents: []*Route{c.Route},
-						},
+						RouteComponents: []*Route{c.Route},
 					}
 
 					test.ExpectPanic(

@@ -1,8 +1,8 @@
 package xrapid
 
 import (
-	"github.com/dogmatiq/enginekit/protobuf/identitypb"
-	"github.com/dogmatiq/enginekit/protobuf/uuidpb"
+	"github.com/dogmatiq/protobuf/identitypb"
+	"github.com/dogmatiq/protobuf/uuidpb"
 	"pgregory.net/rapid"
 )
 

@@ -3,7 +3,7 @@ package dogma.protobuf;
 
 option go_package = "github.com/dogmatiq/enginekit/protobuf/configpb";
 
-import "github.com/dogmatiq/enginekit/protobuf/identitypb/identity.proto";
+import "github.com/dogmatiq/protobuf/identitypb/identity.proto";
 
 // MessageKind is an enumeration of the kinds of message, represented by the
 // [dogma.Command], [dogma.Event], and [dogma.Deadline] interfaces.
@@ -28,7 +28,7 @@ enum HandlerType {
 // server.
 message Application {
   // Identity is the application's identity.
-  Identity identity = 1;
+  dogma.protobuf.v1.Identity identity = 1;
 
   // GoType is the fully-qualified name of the Go type that provides as the
   // application's implementation.
@@ -45,7 +45,7 @@ message Application {
 // Handler is a message handler within an application.
 message Handler {
   // Identity is the handler's identity.
-  Identity identity = 1;
+  dogma.protobuf.v1.Identity identity = 1;
 
   // GoType is the fully-qualified name of the Go type that provides as the
   // handler's implementation.

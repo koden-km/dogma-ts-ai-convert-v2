@@ -298,8 +298,7 @@ func orderedReverse[K, V any, M ordered[K, V, I], I any](
 		if m != nil {
 			pairs := *m.ptr()
 
-			for i := len(pairs) - 1; i >= 0; i-- {
-				p := pairs[i]
+			for _, p := range slices.Backward(pairs) {
 				if !yield(p.Key, p.Value) {
 					return
 				}
@@ -329,8 +328,8 @@ func orderedReverseKeys[K, V any, M ordered[K, V, I], I any](
 		if m != nil {
 			pairs := *m.ptr()
 
-			for i := len(pairs) - 1; i >= 0; i-- {
-				if !yield(pairs[i].Key) {
+			for _, pair := range slices.Backward(pairs) {
+				if !yield(pair.Key) {
 					return
 				}
 			}
@@ -359,8 +358,8 @@ func orderedReverseValues[K, V any, M ordered[K, V, I], I any](
 		if m != nil {
 			pairs := *m.ptr()
 
-			for i := len(pairs) - 1; i >= 0; i-- {
-				if !yield(pairs[i].Value) {
+			for _, pair := range slices.Backward(pairs) {
+				if !yield(pair.Value) {
 					return
 				}
 			}

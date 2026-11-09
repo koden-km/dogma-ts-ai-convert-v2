@@ -98,7 +98,7 @@ func TestToRepeatedly(t *testing.T) {
 		t.Run(c.Name, func(t *testing.T) {
 			mt, tc := newFixture()
 			tc.Expect(noop, c.Expectation)
-			c.Report(mt)
+			c.Report(t, mt)
 			if mt.Failed() != !c.Passes {
 				t.Fatalf("testingT.Failed() = %v, want %v", mt.Failed(), !c.Passes)
 			}
@@ -161,6 +161,26 @@ func TestToRepeatedly(t *testing.T) {
 			`ToRepeatedly("<description>", 1, <nil>): function must not be nil`,
 			func() {
 				ToRepeatedly("<description>", 1, nil)
+			},
+		)
+	})
+
+	t.Run("it panics if the function returns a nil expectation", func(t *testing.T) {
+		_, tc := newFixture()
+
+		xtesting.ExpectPanic(
+			t,
+			`ToRepeatedly("<description>", 2, <func>): factory returned a nil expectation on iteration 1`,
+			func() {
+				tc.Expect(
+					noop,
+					ToRepeatedly("<description>", 2, func(i int) Expectation {
+						if i == 0 {
+							return pass
+						}
+						return nil
+					}),
+				)
 			},
 		)
 	})

@@ -203,10 +203,7 @@ func (s *Keyed[T, K, G]) Union(x *Keyed[T, K, G]) *Keyed[T, K, G] {
 	}
 
 	members := maps.Clone(big)
-
-	for k, m := range small {
-		members[k] = m
-	}
+	maps.Copy(members, small)
 
 	return &Keyed[T, K, G]{
 		members: members,

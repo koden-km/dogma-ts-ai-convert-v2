@@ -432,9 +432,7 @@ func TestAggregate(t *testing.T) {
 			for _, c := range cases {
 				t.Run(c.Name, func(t *testing.T) {
 					cfg := &Aggregate{
-						HandlerCommon: HandlerCommon{
-							RouteComponents: []*Route{c.Route},
-						},
+						RouteComponents: []*Route{c.Route},
 					}
 
 					test.ExpectPanic(

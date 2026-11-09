@@ -1,0 +1,25 @@
+[
+  { "name": "empty", "headers": [], "sizes": [] },
+  { "name": "single", "headers": ["a"], "sizes": [1] },
+  { "name": "equal run", "headers": ["a", "a", "a"], "sizes": [3] },
+  {
+    "name": "distinct headers",
+    "headers": ["a", "b", "c"],
+    "sizes": [1, 1, 1]
+  },
+  {
+    "name": "only consecutive matches",
+    "headers": ["a", "a", "b", "a", "a"],
+    "sizes": [2, 1, 2]
+  },
+  {
+    "name": "missing headers",
+    "headers": [null, null, "a", null],
+    "sizes": [2, 1, 1]
+  },
+  {
+    "name": "missing differs from empty",
+    "headers": [null, "", "", null],
+    "sizes": [1, 2, 1]
+  }
+]

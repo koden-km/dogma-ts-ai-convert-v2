@@ -11,6 +11,46 @@ The format is based on [Keep a Changelog], and this project adheres to
 [semantic versioning]: https://semver.org/spec/v2.0.0.html
 [bc]: https://github.com/dogmatiq/.github/blob/main/VERSIONING.md#changelogs
 
+## [0.24.0] - 2026-11-02
+
+### Changed
+
+- **[BC]** Updated minimum Go version to v1.27.
+- **[BC]** Updated to enginekit v0.29.0. Projects that use testkit with runkit
+  must also update runkit to a version that uses enginekit v0.29.0 or later.
+
+## [0.23.0] - 2026-10-28
+
+### Added
+
+- Added `fact.DispatchCycleSkipped`, which the engine emits in place of
+  `fact.DispatchCycleBegun` when a dispatched message can not be routed to any
+  handler. Its `Reason` is either `fact.UnroutedMessageType` or
+  `fact.OutboundOnlyMessageType`.
+
+### Changed
+
+- **[BC]** `engine.Engine.Dispatch()` and `engine.CommandExecutor` now return
+  an error, instead of panicking, when the message type is not handled by any
+  handler.
+- `Test.Expect()` now logs the expectation's test report before failing the
+  test when the action returns an error. For a message that is not handled by
+  any handler, the report explains why and suggests the route to add.
+- Bumped Dapper to v0.7.0. Protobuf messages that use the "opaque" API are now
+  rendered in test reports using their field names, without the `xxx_hidden_`
+  prefix.
+
+### Fixed
+
+- `ExecuteCommand()` and `RecordEvent()` no longer cause an engine panic when
+  the message type only appears in outbound routes, such as a command that a
+  process executes but that no aggregate or integration handles.
+- Fixed the panic message produced by `ExecuteCommand()` when passed an invalid
+  command, which incorrectly referred to `ToRecordEvent()`.
+- Fixed a panic in `Test.Expect()` when a value passed to `Test.Annotate()` has
+  the same type as a hidden field of a protobuf message that uses the "opaque"
+  API.
+
 ## [0.22.2] - 2026-10-01
 
 ### Changed
@@ -586,6 +626,8 @@ guide][0.11.0 migration guide] for detailed instructions.
 [0.22.0]: https://github.com/dogmatiq/testkit/releases/tag/v0.22.0
 [0.22.1]: https://github.com/dogmatiq/testkit/releases/tag/v0.22.1
 [0.22.2]: https://github.com/dogmatiq/testkit/releases/tag/v0.22.2
+[0.23.0]: https://github.com/dogmatiq/testkit/releases/tag/v0.23.0
+[0.24.0]: https://github.com/dogmatiq/testkit/releases/tag/v0.24.0
 
 <!-- contributors -->
 

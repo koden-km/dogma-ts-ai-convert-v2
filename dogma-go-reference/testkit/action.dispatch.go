@@ -20,7 +20,7 @@ func ExecuteCommand(m dogma.Command) Action {
 	mt := message.TypeOf(m)
 
 	if err := m.Validate(validation.CommandValidationScope()); err != nil {
-		panic(fmt.Sprintf("ToRecordEvent(%s): %s", mt, err))
+		panic(fmt.Sprintf("ExecuteCommand(%s): %s", mt, err))
 	}
 
 	return dispatchAction{
@@ -71,14 +71,5 @@ func (a dispatchAction) ConfigurePredicate(*PredicateOptions) {
 }
 
 func (a dispatchAction) Do(ctx context.Context, s ActionScope) error {
-	mt := message.TypeOf(a.m)
-	if !s.App.RouteSet().HasMessageType(mt) {
-		return inflect.Errorf(
-			mt.Kind(),
-			"cannot <produce> <message>, %s is not a recognized message type",
-			mt,
-		)
-	}
-
 	return s.Engine.Dispatch(ctx, a.m, s.OperationOptions...)
 }

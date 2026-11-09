@@ -7,8 +7,8 @@ import (
 
 	"github.com/dogmatiq/enginekit/internal/typename"
 	"github.com/dogmatiq/enginekit/optional"
-	"github.com/dogmatiq/enginekit/protobuf/identitypb"
-	"github.com/dogmatiq/enginekit/protobuf/uuidpb"
+	"github.com/dogmatiq/protobuf/identitypb"
+	"github.com/dogmatiq/protobuf/uuidpb"
 )
 
 // An Entity is a [Component] that that represents the configuration of a Dogma

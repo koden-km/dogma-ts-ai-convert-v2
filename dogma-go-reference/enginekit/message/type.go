@@ -65,7 +65,7 @@ func (t Type) String() string {
 }
 
 func typeToString(t reflect.Type) string {
-	if t.Kind() == reflect.Ptr {
+	if t.Kind() == reflect.Pointer {
 		return "*" + typeToString(t.Elem())
 	}
 

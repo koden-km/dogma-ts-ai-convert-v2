@@ -73,8 +73,7 @@ type describeContext struct {
 
 func hasError[T error](ctx *describeContext) bool {
 	for _, err := range ctx.errors {
-		var e T
-		if errors.As(err, &e) {
+		if _, ok := errors.AsType[T](err); ok {
 			return true
 		}
 	}

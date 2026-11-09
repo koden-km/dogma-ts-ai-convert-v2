@@ -1,0 +1,27 @@
+edition = "2024";
+package dogma.protobuf.v1;
+
+option go_package = "github.com/dogmatiq/protobuf/identitypb";
+
+import "github.com/dogmatiq/protobuf/uuidpb/uuid.proto";
+
+// Identity represents the identity of an entity.
+//
+// It is used to identify Dogma applications, handlers, sites, streams, etc.
+message Identity {
+  // Name is the entity's human-readable name.
+  //
+  // The name MUST be between 1 and 255 bytes when encoded as UTF-8.
+  //
+  // The name should be unique enough to allow a human to identify the entity
+  // without ambiguity. There is no hard requirement for uniqueness.
+  //
+  // Entity names may be changed at any time.
+  string name = 1 [features.field_presence = IMPLICIT];
+
+  // Key is the entity's immutable, unique key.
+  //
+  // The key is used to uniquely identify the entity globally, and across all
+  // time. Every entity must have its own UUID, which must not be changed.
+  UUID key = 2;
+}

@@ -7,7 +7,7 @@ import (
 	"unicode"
 
 	"github.com/dogmatiq/enginekit/optional"
-	"github.com/dogmatiq/enginekit/protobuf/uuidpb"
+	"github.com/dogmatiq/protobuf/uuidpb"
 )
 
 // Identity is a [Component] that that represents the unique identity of an

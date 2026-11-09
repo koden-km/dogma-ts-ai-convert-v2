@@ -40,11 +40,9 @@ func TestIdentity(t *testing.T) {
 				Name:  "speculative",
 				Error: ``,
 				Component: &Identity{
-					ComponentCommon: ComponentCommon{
-						IsSpeculative: true,
-					},
-					Name: optional.Some("name"),
-					Key:  optional.Some("e6b691dd-731c-4c14-8e1c-1622381202dc"),
+					IsSpeculative: true,
+					Name:          optional.Some("name"),
+					Key:           optional.Some("e6b691dd-731c-4c14-8e1c-1622381202dc"),
 				},
 			},
 			{
@@ -54,11 +52,9 @@ func TestIdentity(t *testing.T) {
 					ForExecution(),
 				},
 				Component: &Identity{
-					ComponentCommon: ComponentCommon{
-						IsSpeculative: true,
-					},
-					Name: optional.Some("name"),
-					Key:  optional.Some("e6b691dd-731c-4c14-8e1c-1622381202dc"),
+					IsSpeculative: true,
+					Name:          optional.Some("name"),
+					Key:           optional.Some("e6b691dd-731c-4c14-8e1c-1622381202dc"),
 				},
 			},
 			{
@@ -69,11 +65,9 @@ func TestIdentity(t *testing.T) {
 					// both it's name and key be considered incomplete, but this
 					// allows us to represent a case where the name and key are
 					// build dynamically and we don't have the _entire_ string.
-					ComponentCommon: ComponentCommon{
-						IsPartial: true,
-					},
-					Name: optional.Some("name"),
-					Key:  optional.Some("e6b691dd-731c-4c14-8e1c-1622381202dc"),
+					IsPartial: true,
+					Name:      optional.Some("name"),
+					Key:       optional.Some("e6b691dd-731c-4c14-8e1c-1622381202dc"),
 				},
 			},
 			{
@@ -201,11 +195,9 @@ func TestIdentity(t *testing.T) {
 				String:      `identity:name/2da5eec5-374e-4716-b1c7-f24abd8df57f`,
 				Description: `valid speculative identity name/2da5eec5-374e-4716-b1c7-f24abd8df57f`,
 				Component: &Identity{
-					ComponentCommon: ComponentCommon{
-						IsSpeculative: true,
-					},
-					Name: optional.Some("name"),
-					Key:  optional.Some("2da5eec5-374e-4716-b1c7-f24abd8df57f"),
+					IsSpeculative: true,
+					Name:          optional.Some("name"),
+					Key:           optional.Some("2da5eec5-374e-4716-b1c7-f24abd8df57f"),
 				},
 			},
 		},

@@ -1,0 +1,55 @@
+name: Publish npm package
+
+on:
+  push:
+    tags:
+      - v[0-9]+.[0-9]+.[0-9]+
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-npm-package-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish npm package
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+
+      - name: Set up mise
+        uses: jdx/mise-action@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Set package version
+        run: make set-package-version
+
+      - name: Install dependencies
+        run: make link-dependencies
+
+      - name: Make
+        run: make ci
+
+      - name: Publish package
+        run: pnpm publish --no-git-checks

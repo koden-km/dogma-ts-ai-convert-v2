@@ -8,8 +8,8 @@ import (
 	"github.com/dogmatiq/enginekit/config/internal/configbuilder"
 	"github.com/dogmatiq/enginekit/config/internal/constraints"
 	"github.com/dogmatiq/enginekit/internal/test"
-	"github.com/dogmatiq/enginekit/protobuf/identitypb"
-	"github.com/dogmatiq/enginekit/protobuf/uuidpb"
+	"github.com/dogmatiq/protobuf/identitypb"
+	"github.com/dogmatiq/protobuf/uuidpb"
 )
 
 func testEntity[

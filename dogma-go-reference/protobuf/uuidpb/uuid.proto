@@ -1,0 +1,13 @@
+edition = "2024";
+package dogma.protobuf.v1;
+
+option go_package = "github.com/dogmatiq/protobuf/uuidpb";
+
+// UUID is a size-optimized representation of an RFC 9562 UUID.
+//
+// UUID values MUST use version 4 (random) or version 5 (name-based), and the
+// RFC 9562 variant.
+message UUID {
+  uint64 upper = 1 [features.field_presence = IMPLICIT];
+  uint64 lower = 2 [features.field_presence = IMPLICIT];
+}

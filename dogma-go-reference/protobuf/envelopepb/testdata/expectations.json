@@ -1,0 +1,31 @@
+[
+  {
+    "file": "absent.binpb",
+    "description": "no matching values in the header or body",
+    "bodies": [{ "extensionOffset": null, "baggageOffset": null }]
+  },
+  {
+    "file": "header-only.binpb",
+    "description": "values in the header only",
+    "bodies": [{ "extensionOffset": 1, "baggageOffset": 2 }]
+  },
+  {
+    "file": "body-only.binpb",
+    "description": "values in the body only",
+    "bodies": [{ "extensionOffset": 3, "baggageOffset": 4 }]
+  },
+  {
+    "file": "conflicting.binpb",
+    "description": "values in both the header and body, the body wins",
+    "bodies": [{ "extensionOffset": 3, "baggageOffset": 4 }]
+  },
+  {
+    "file": "mixed.binpb",
+    "description": "multiple bodies sharing a header",
+    "bodies": [
+      { "extensionOffset": 1, "baggageOffset": 2 },
+      { "extensionOffset": 3, "baggageOffset": 2 },
+      { "extensionOffset": 1, "baggageOffset": 4 }
+    ]
+  }
+]

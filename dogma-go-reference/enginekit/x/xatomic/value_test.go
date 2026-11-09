@@ -25,9 +25,7 @@ func TestValue(t *testing.T) {
 
 	// Start concurrent writers.
 	for range 10 {
-		g.Add(1)
-		go func() {
-			defer g.Done()
+		g.Go(func() {
 
 			for range 1000 {
 				for _, n := range want {
@@ -35,7 +33,7 @@ func TestValue(t *testing.T) {
 					v.Store(n)
 				}
 			}
-		}()
+		})
 	}
 
 	for range 1000 {

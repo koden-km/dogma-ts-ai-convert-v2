@@ -1,0 +1,5 @@
+/artifacts/
+/.makefiles/
+/.vscode/
+/node_modules/
+**/testdata/rapid/

@@ -1,0 +1,98 @@
+edition = "2024";
+package dogma.messaging.v1;
+
+option go_package = "github.com/dogmatiq/protobuf/messaginggrpc";
+
+import "github.com/dogmatiq/protobuf/envelopepb/envelope.proto";
+import "github.com/dogmatiq/protobuf/uuidpb/uuid.proto";
+import "github.com/dogmatiq/protobuf/messaginggrpc/filter.proto";
+
+// EventStreamConsumerAPI is a service for consuming event messages from
+// offset-based, ordered event streams.
+service EventStreamConsumerAPI {
+  // WatchEvents delivers events from all streams available from the server.
+  // Events are delivered as they are appended, provided they match the
+  // request's filter.
+  //
+  // The feed starts at the tail of each stream. Every available stream that
+  // already contains matching events is represented by at least one segment.
+  // The first [EventStreamSegment] received for a stream may be empty, but it
+  // tells the client that the stream exists and the offset at which delivery
+  // begins. Each subsequent segment for that stream begins at the end offset
+  // of the previous segment.
+  //
+  // If the client cannot keep up and the server can no longer deliver a stream
+  // contiguously, the call ends with ABORTED.
+  //
+  // A missing or invalid message filter results in INVALID_ARGUMENT.
+  rpc WatchEvents(WatchEventsRequest) returns (stream EventStreamSegment);
+
+  // ReadEvents delivers events that match the request's filter from a single
+  // event stream, in order, beginning at the requested offset.
+  //
+  // The first segment begins at the requested offset. Each subsequent segment
+  // begins at the end offset of the previous segment. Delivery ends when the
+  // server reaches the end of the stream, at which point it closes the call.
+  //
+  // A missing or invalid stream ID results in INVALID_ARGUMENT, and an
+  // unrecognized one results in NOT_FOUND.
+  //
+  // A requested offset beyond the end of the stream results in OUT_OF_RANGE.
+  // An offset equal to the end of the stream is valid and returns no events.
+  //
+  // A missing or invalid message filter results in INVALID_ARGUMENT.
+  rpc ReadEvents(ReadEventsRequest) returns (stream EventStreamSegment);
+}
+
+// WatchEventsRequest is the input to the [EventStreamConsumerAPI.WatchEvents]
+// method.
+message WatchEventsRequest {
+  // Filter describes the events to deliver.
+  MessageFilter filter = 1;
+}
+
+// ReadEventsRequest is the input to the [EventStreamConsumerAPI.ReadEvents]
+// method.
+message ReadEventsRequest {
+  // EventStreamId is the ID of the stream from which events are read.
+  dogma.protobuf.v1.UUID event_stream_id = 1;
+
+  // BeginOffset is the offset from which events are read. The first segment
+  // begins at this offset. Events from this offset to the end of the stream
+  // are delivered, then the call is closed.
+  uint64 begin_offset = 2 [features.field_presence = IMPLICIT];
+
+  // Filter describes the events to deliver.
+  MessageFilter filter = 3;
+}
+
+// EventStreamSegment is a contiguous piece of one event stream, the half-open
+// range [begin_offset, end_offset). It carries the events in that range that
+// match the requested message types.
+//
+// It is the (streaming) output of both [EventStreamConsumerAPI.WatchEvents]
+// and [EventStreamConsumerAPI.ReadEvents].
+message EventStreamSegment {
+  // EventStreamId is the ID of the stream that this is a segment of.
+  dogma.protobuf.v1.UUID event_stream_id = 1;
+
+  // BeginOffset is the offset of the first event in the range, inclusive.
+  //
+  // Each segment after the first for a stream begins at the end offset of the
+  // one before it.
+  uint64 begin_offset = 2 [features.field_presence = IMPLICIT];
+
+  // EndOffset is the offset immediately after the range, exclusive.
+  uint64 end_offset = 3 [features.field_presence = IMPLICIT];
+
+  // Envelopes is a (possibly empty) list of multi-envelopes containing the
+  // events in the range that match the requested message types.
+  //
+  // Each envelope includes the [envelopepb.EventStreamPosition] extension.
+  //
+  // The events appear in ascending offset order, both within each
+  // multi-envelope and across the list. Their offsets may have gaps, because
+  // events of other types are omitted. There is no additional relationship
+  // implied between envelopes that appear in the same segment.
+  repeated dogma.protobuf.v1.MultiEnvelope envelopes = 4;
+}

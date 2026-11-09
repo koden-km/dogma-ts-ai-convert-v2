@@ -35,7 +35,7 @@ func Get(t reflect.Type) string {
 		return t.PkgPath() + "." + t.Name()
 	}
 
-	if t.Kind() == reflect.Ptr {
+	if t.Kind() == reflect.Pointer {
 		return "*" + Get(t.Elem())
 	}
 

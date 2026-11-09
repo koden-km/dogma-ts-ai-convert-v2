@@ -1,0 +1,5 @@
+name: projectionkit
+version: 0.0.0
+dependencies:
+  apm:
+    - "dogmatiq/agent-config/internal#v1.1.0"

@@ -1,0 +1,2 @@
+# Golden fixtures are binary, so must not have line endings converted.
+*.binpb binary
